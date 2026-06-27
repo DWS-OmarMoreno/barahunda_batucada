@@ -1,0 +1,48 @@
+.niveles {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.niveles__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.niveles__descripcion {
+  color: var(--color-secondary);
+  font-size: 13px;
+}
+
+.niveles__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.niveles__error {
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.niveles__detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.niveles__tabla-miembros {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.niveles__tabla-miembros th,
+.niveles__tabla-miembros td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+}

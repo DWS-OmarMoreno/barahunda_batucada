@@ -1,0 +1,100 @@
+.multas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.multas__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.multas__descripcion {
+  color: var(--color-secondary);
+  font-size: 13px;
+}
+
+.multas__indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.multas__indicador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.multas__indicador-valor {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.multas__indicador-etiqueta {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.multas__indicador--success .multas__indicador-valor { color: var(--color-success); }
+.multas__indicador--danger .multas__indicador-valor { color: var(--color-danger); }
+
+.multas__select-filtro {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.multas__btn-ver {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.multas__btn-ver:hover {
+  background: var(--color-background);
+}
+
+.multas__detalle-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.multas__detalle-campos div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.multas__detalle-campos span {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.multas__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.multas__error {
+  font-size: 13px;
+  color: var(--color-danger);
+}

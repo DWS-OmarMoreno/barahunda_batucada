@@ -1,0 +1,123 @@
+.mensualidades {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mensualidades__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mensualidades__descripcion {
+  color: var(--color-secondary);
+  font-size: 13px;
+}
+
+.mensualidades__selector-mes {
+  display: flex;
+  gap: 8px;
+}
+
+.mensualidades__select-filtro {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.mensualidades__input-anio {
+  width: 90px;
+}
+
+.mensualidades__indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.mensualidades__indicador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.mensualidades__indicador-valor {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.mensualidades__indicador-etiqueta {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.mensualidades__indicador--success .mensualidades__indicador-valor { color: var(--color-success); }
+.mensualidades__indicador--danger .mensualidades__indicador-valor { color: var(--color-danger); }
+
+.mensualidades__valor-editable {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+.mensualidades__valor-editable:hover {
+  color: var(--color-text);
+}
+
+.mensualidades__form-valor,
+.mensualidades__form-pago {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mensualidades__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.mensualidades__error {
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.mensualidades__historial {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mensualidades__nota {
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.mensualidades__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mensualidades__tabla th,
+.mensualidades__tabla td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+}

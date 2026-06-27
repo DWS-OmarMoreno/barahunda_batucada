@@ -1,0 +1,32 @@
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.kpi-card__titulo {
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.kpi-card__valor {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.kpi-card__subtitulo {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.kpi-card--success .kpi-card__valor { color: var(--color-success); }
+.kpi-card--danger .kpi-card__valor { color: var(--color-danger); }
+.kpi-card--warning .kpi-card__valor { color: var(--color-warning); }
+.kpi-card--info .kpi-card__valor { color: var(--color-primary); }

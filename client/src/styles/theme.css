@@ -1,0 +1,19 @@
+/* Sistema de colores dinámico — estos valores son el fallback antes de
+   que ThemeContext aplique los colores reales que vienen de /api/configuracion */
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #64748b;
+  --color-accent: #f59e0b;
+  --color-text: #1e293b;
+  --color-background: #f8fafc;
+
+  --color-white: #ffffff;
+  --color-border: #e2e8f0;
+  --color-danger: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+}

@@ -1,0 +1,29 @@
+.sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sublist__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sublist__titulo {
+  font-size: 14px;
+  margin: 0;
+}
+
+.sublist__vacio {
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.sublist__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

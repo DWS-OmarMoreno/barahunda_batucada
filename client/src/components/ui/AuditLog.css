@@ -1,0 +1,38 @@
+.audit-log {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.audit-log__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.audit-log__tabla th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+}
+
+.audit-log__tabla td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.audit-log__valor {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-log__estado {
+  color: var(--color-secondary);
+  font-size: 13px;
+  padding: 12px 0;
+}

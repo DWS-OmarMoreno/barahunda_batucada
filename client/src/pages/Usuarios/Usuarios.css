@@ -1,0 +1,35 @@
+.usuarios {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.usuarios__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.usuarios__descripcion {
+  color: var(--color-secondary);
+  font-size: 13px;
+}
+
+.usuarios__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.usuarios__error {
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.usuarios__detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}

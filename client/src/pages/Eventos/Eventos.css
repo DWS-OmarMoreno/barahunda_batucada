@@ -1,0 +1,126 @@
+.eventos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.eventos__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eventos__descripcion {
+  color: var(--color-secondary);
+  font-size: 13px;
+}
+
+.eventos__select-filtro {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.eventos__btn-ver {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.eventos__btn-ver:hover {
+  background: var(--color-background);
+}
+
+.eventos__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventos__error {
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.eventos__detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eventos__detalle-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.eventos__detalle-campos div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eventos__detalle-campos span {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.eventos__tabla-participantes {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.eventos__tabla-participantes th {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+.eventos__tabla-participantes td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.eventos__tabla-participantes-acciones {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.eventos__form-participante {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--color-background);
+  border-radius: var(--radius);
+}
+
+.eventos__form-participante h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.eventos__form-participante-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.eventos__form-participante-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

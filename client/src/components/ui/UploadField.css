@@ -1,0 +1,58 @@
+.upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.upload-field__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.upload-field__zona {
+  position: relative;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--color-background);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.upload-field__zona--activa {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.upload-field__placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.upload-field__preview {
+  max-height: 100px;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
+.upload-field__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-field__error {
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.upload-field__help {
+  font-size: 12px;
+  color: var(--color-secondary);
+}

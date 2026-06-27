@@ -1,0 +1,158 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.layout__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--color-primary);
+  color: var(--color-white);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.layout__menu-btn {
+  display: inline-flex;
+  background: transparent;
+  border: none;
+  color: var(--color-white);
+  font-size: 22px;
+  padding: 4px 8px;
+}
+
+.layout__marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.layout__logo {
+  height: 28px;
+  width: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: var(--color-white);
+}
+
+.layout__nombre-escuela {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layout__usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.layout__usuario-nombre {
+  display: none;
+}
+
+.layout__logout-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--color-white);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.layout__logout-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.layout__cuerpo {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.layout__sidebar {
+  display: none;
+  flex-direction: column;
+  background: var(--color-white);
+  border-right: 1px solid var(--color-border);
+  width: 220px;
+  padding: 12px 0;
+}
+
+.layout__sidebar--abierto {
+  display: flex;
+  position: fixed;
+  top: 52px;
+  left: 0;
+  bottom: 0;
+  z-index: 9;
+  box-shadow: var(--shadow);
+  overflow-y: auto;
+}
+
+.layout__nav-link {
+  padding: 11px 18px;
+  color: var(--color-text);
+  font-size: 14px;
+  border-left: 3px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layout__nav-link:hover {
+  background: var(--color-background);
+}
+
+.layout__nav-link--activo {
+  border-left-color: var(--color-primary);
+  background: var(--color-background);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.layout__nav-link--deshabilitado {
+  color: var(--color-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.layout__nav-link--deshabilitado small {
+  font-size: 10px;
+  border: 1px solid var(--color-border);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.layout__contenido {
+  flex: 1;
+  padding: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .layout__menu-btn {
+    display: none;
+  }
+
+  .layout__usuario-nombre {
+    display: inline;
+  }
+
+  .layout__sidebar {
+    display: flex;
+  }
+
+  .layout__contenido {
+    padding: 24px 32px;
+  }
+}

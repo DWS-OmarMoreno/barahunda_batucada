@@ -1,0 +1,28 @@
+.tabs__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+.tabs__boton {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tabs__boton:hover {
+  color: var(--color-text);
+}
+
+.tabs__boton--activo {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
