@@ -1,109 +1,166 @@
 -- =====================================================================
--- MIGRACIÓN FASE 1 — Zona horaria, dominio, SMTP, roles, correo
--- institucional, edición de asistencias, plantillas de correo
+-- MIGRACIÓN FASE 1 — Compatible con MySQL 5.7+ y 8.0+
+-- Zona horaria, dominio, SMTP, roles, correo institucional,
+-- edición de asistencias, plantillas de correo
 -- Ejecutar: mysql -u barahunda_app -p escuela_musica < migracion_fase1.sql
 -- =====================================================================
 
+-- ─────────────────────────────────────────────────────────────────────
 -- 1. CONFIGURACION — nuevos campos
-ALTER TABLE configuracion
-  ADD COLUMN IF NOT EXISTS zona_horaria VARCHAR(100) NOT NULL DEFAULT 'America/Bogota' AFTER fecha_go_live,
-  ADD COLUMN IF NOT EXISTS dominio VARCHAR(255) NULL AFTER zona_horaria,
-  ADD COLUMN IF NOT EXISTS smtp_host VARCHAR(255) NULL AFTER dominio,
-  ADD COLUMN IF NOT EXISTS smtp_port SMALLINT NULL DEFAULT 587 AFTER smtp_host,
-  ADD COLUMN IF NOT EXISTS smtp_user VARCHAR(255) NULL AFTER smtp_port,
-  ADD COLUMN IF NOT EXISTS smtp_password VARCHAR(255) NULL AFTER smtp_user,
-  ADD COLUMN IF NOT EXISTS smtp_from VARCHAR(255) NULL AFTER smtp_password,
-  ADD COLUMN IF NOT EXISTS smtp_secure TINYINT(1) NOT NULL DEFAULT 0 AFTER smtp_from;
+-- ─────────────────────────────────────────────────────────────────────
 
--- 2. USUARIOS — ampliar rol para incluir MIEMBRO + FK a miembros
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'zona_horaria') = 0,
+  "ALTER TABLE configuracion ADD COLUMN zona_horaria VARCHAR(100) NOT NULL DEFAULT 'America/Bogota' AFTER fecha_go_live",
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'dominio') = 0,
+  'ALTER TABLE configuracion ADD COLUMN dominio VARCHAR(255) NULL AFTER zona_horaria',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'smtp_host') = 0,
+  'ALTER TABLE configuracion ADD COLUMN smtp_host VARCHAR(255) NULL AFTER dominio',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'smtp_port') = 0,
+  'ALTER TABLE configuracion ADD COLUMN smtp_port SMALLINT NULL DEFAULT 587 AFTER smtp_host',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'smtp_user') = 0,
+  'ALTER TABLE configuracion ADD COLUMN smtp_user VARCHAR(255) NULL AFTER smtp_port',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'smtp_password') = 0,
+  'ALTER TABLE configuracion ADD COLUMN smtp_password VARCHAR(255) NULL AFTER smtp_user',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'smtp_from') = 0,
+  'ALTER TABLE configuracion ADD COLUMN smtp_from VARCHAR(255) NULL AFTER smtp_password',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'configuracion' AND COLUMN_NAME = 'smtp_secure') = 0,
+  'ALTER TABLE configuracion ADD COLUMN smtp_secure TINYINT(1) NOT NULL DEFAULT 0 AFTER smtp_from',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. USUARIOS — ampliar rol + FK a miembros
+-- ─────────────────────────────────────────────────────────────────────
+
 ALTER TABLE usuarios
   MODIFY COLUMN rol ENUM('ADMIN','MIEMBRO') NOT NULL DEFAULT 'ADMIN';
 
-ALTER TABLE usuarios
-  ADD COLUMN IF NOT EXISTS miembro_id INT NULL AFTER rol;
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'miembro_id') = 0,
+  'ALTER TABLE usuarios ADD COLUMN miembro_id INT NULL AFTER rol',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- Agregar FK solo si no existe
-SET @fk_exists = (
-  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'usuarios'
-    AND CONSTRAINT_NAME = 'fk_usuarios_miembro'
-    AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-);
-SET @sql = IF(@fk_exists = 0,
+-- FK fk_usuarios_miembro
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND CONSTRAINT_NAME = 'fk_usuarios_miembro' AND CONSTRAINT_TYPE = 'FOREIGN KEY') = 0,
   'ALTER TABLE usuarios ADD CONSTRAINT fk_usuarios_miembro FOREIGN KEY (miembro_id) REFERENCES miembros(id) ON DELETE SET NULL',
   'SELECT 1'
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- Agregar índice solo si no existe
-SET @idx_exists = (
-  SELECT COUNT(*) FROM information_schema.STATISTICS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'usuarios'
-    AND INDEX_NAME = 'idx_usuarios_miembro'
-);
-SET @sql2 = IF(@idx_exists = 0,
+-- Índice idx_usuarios_miembro
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND INDEX_NAME = 'idx_usuarios_miembro') = 0,
   'ALTER TABLE usuarios ADD INDEX idx_usuarios_miembro (miembro_id)',
   'SELECT 1'
-);
-PREPARE stmt2 FROM @sql2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
+-- ─────────────────────────────────────────────────────────────────────
 -- 3. MIEMBROS — correo institucional
-ALTER TABLE miembros
-  ADD COLUMN IF NOT EXISTS correo_institucional VARCHAR(150) NULL AFTER email;
+-- ─────────────────────────────────────────────────────────────────────
 
-SET @idx2_exists = (
-  SELECT COUNT(*) FROM information_schema.STATISTICS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'miembros'
-    AND INDEX_NAME = 'idx_miembros_correo_inst'
-);
-SET @sql3 = IF(@idx2_exists = 0,
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'miembros' AND COLUMN_NAME = 'correo_institucional') = 0,
+  'ALTER TABLE miembros ADD COLUMN correo_institucional VARCHAR(150) NULL AFTER email',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'miembros' AND INDEX_NAME = 'idx_miembros_correo_inst') = 0,
   'ALTER TABLE miembros ADD INDEX idx_miembros_correo_inst (correo_institucional)',
   'SELECT 1'
-);
-PREPARE stmt3 FROM @sql3; EXECUTE stmt3; DEALLOCATE PREPARE stmt3;
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 4. ASISTENCIAS — campos para edición manual por admin
-ALTER TABLE asistencias
-  ADD COLUMN IF NOT EXISTS modificado_manualmente TINYINT(1) NOT NULL DEFAULT 0 AFTER activo,
-  ADD COLUMN IF NOT EXISTS motivo_modificacion VARCHAR(255) NULL AFTER modificado_manualmente,
-  ADD COLUMN IF NOT EXISTS modificado_por INT NULL AFTER motivo_modificacion,
-  ADD COLUMN IF NOT EXISTS fecha_modificacion DATETIME NULL AFTER modificado_por;
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. ASISTENCIAS — campos de edición manual
+-- ─────────────────────────────────────────────────────────────────────
 
-SET @fk2_exists = (
-  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'asistencias'
-    AND CONSTRAINT_NAME = 'fk_asistencias_modificado_por'
-    AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-);
-SET @sql4 = IF(@fk2_exists = 0,
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'asistencias' AND COLUMN_NAME = 'modificado_manualmente') = 0,
+  'ALTER TABLE asistencias ADD COLUMN modificado_manualmente TINYINT(1) NOT NULL DEFAULT 0 AFTER activo',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'asistencias' AND COLUMN_NAME = 'motivo_modificacion') = 0,
+  'ALTER TABLE asistencias ADD COLUMN motivo_modificacion VARCHAR(255) NULL AFTER modificado_manualmente',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'asistencias' AND COLUMN_NAME = 'modificado_por') = 0,
+  'ALTER TABLE asistencias ADD COLUMN modificado_por INT NULL AFTER motivo_modificacion',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'asistencias' AND COLUMN_NAME = 'fecha_modificacion') = 0,
+  'ALTER TABLE asistencias ADD COLUMN fecha_modificacion DATETIME NULL AFTER modificado_por',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'asistencias' AND CONSTRAINT_NAME = 'fk_asistencias_modificado_por' AND CONSTRAINT_TYPE = 'FOREIGN KEY') = 0,
   'ALTER TABLE asistencias ADD CONSTRAINT fk_asistencias_modificado_por FOREIGN KEY (modificado_por) REFERENCES usuarios(id) ON DELETE SET NULL',
   'SELECT 1'
-);
-PREPARE stmt4 FROM @sql4; EXECUTE stmt4; DEALLOCATE PREPARE stmt4;
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 5. AUDITORIA — agregar usuario_email para trazabilidad sin JOIN
-ALTER TABLE auditoria
-  ADD COLUMN IF NOT EXISTS usuario_email VARCHAR(150) NULL AFTER usuario_id;
+-- ─────────────────────────────────────────────────────────────────────
+-- 5. AUDITORIA — usuario_email para trazabilidad
+-- ─────────────────────────────────────────────────────────────────────
 
+SET @s = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'auditoria' AND COLUMN_NAME = 'usuario_email') = 0,
+  'ALTER TABLE auditoria ADD COLUMN usuario_email VARCHAR(150) NULL AFTER usuario_id',
+  'SELECT 1'
+); PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- ─────────────────────────────────────────────────────────────────────
 -- 6. PLANTILLAS_CORREO — nueva tabla
+-- ─────────────────────────────────────────────────────────────────────
+
 CREATE TABLE IF NOT EXISTS plantillas_correo (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(150) NOT NULL,
-  clave VARCHAR(100) NOT NULL UNIQUE COMMENT 'Identificador técnico: bienvenida, tarea_asignada, tarea_calificada, recordatorio_mensual',
+  clave VARCHAR(100) NOT NULL UNIQUE,
   asunto VARCHAR(255) NOT NULL,
-  cuerpo TEXT NOT NULL COMMENT 'HTML con variables entre llaves: {nombre}, {nivel}, etc.',
-  variables_disponibles VARCHAR(500) NULL COMMENT 'Lista de variables disponibles separadas por coma',
+  cuerpo TEXT NOT NULL,
+  variables_disponibles VARCHAR(500) NULL,
   activo TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_plantillas_correo_clave (clave)
 ) ENGINE=InnoDB;
 
--- Seed plantillas de correo (solo si no existen)
 INSERT IGNORE INTO plantillas_correo (nombre, clave, asunto, cuerpo, variables_disponibles) VALUES
 ('Bienvenida al miembro', 'bienvenida',
   'Bienvenido/a a {escuela_nombre}, {nombre}',
@@ -119,5 +176,5 @@ INSERT IGNORE INTO plantillas_correo (nombre, clave, asunto, cuerpo, variables_d
   '{nombre},{titulo_tarea},{calificacion},{comentario}'),
 ('Recordatorio de mensualidad', 'recordatorio_mensual',
   'Recordatorio: Mensualidad pendiente - {mes_pendiente}',
-  '<h2>Hola, {nombre}</h2><p>Te recordamos que tienes pendiente el pago de tu mensualidad correspondiente a <strong>{mes_pendiente}</strong> por un valor de <strong>{valor_mensualidad}</strong>.</p><p>Por favor realiza tu pago a la brevedad posible.</p>',
+  '<h2>Hola, {nombre}</h2><p>Te recordamos que tienes pendiente el pago de tu mensualidad correspondiente a <strong>{mes_pendiente}</strong> por un valor de <strong>{valor_mensualidad}</strong>.</p>',
   '{nombre},{mes_pendiente},{valor_mensualidad}');
