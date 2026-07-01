@@ -15,6 +15,7 @@ import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import SubList from '../../components/ui/SubList';
 import AuditLog from '../../components/ui/AuditLog';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Niveles.css';
 
 const FORM_VACIO = { nombre: '', descripcion: '' };
@@ -138,13 +139,11 @@ export default function Niveles() {
           { clave: 'activo', titulo: 'Estado', render: (f) => <StatusBadge texto={f.activo ? 'Activo' : 'Inactivo'} variant={f.activo ? 'success' : 'secondary'} /> },
         ]}
         acciones={(fila) => (
-          <>
-            <Button variant="ghost" onClick={() => abrirDetalle(fila)}>Ver</Button>
-            <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-            <Button variant="danger" onClick={() => setConfirmInactivar(fila)}>
-              {fila.activo ? 'Inactivar' : 'Activar'}
-            </Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Ver detalle', onClick: () => abrirDetalle(fila) },
+            { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+            { etiqueta: fila.activo ? 'Inactivar' : 'Activar', onClick: () => setConfirmInactivar(fila), variant: 'danger' },
+          ]} />
         )}
         vacioTexto="No hay niveles registrados."
       />

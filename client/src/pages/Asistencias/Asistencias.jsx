@@ -16,6 +16,7 @@ import AuditLog from '../../components/ui/AuditLog';
 import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import { formatearFecha, formatearHora } from '../../utils/formato';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Asistencias.css';
 
 const ETIQUETAS_ESTADO = { A_TIEMPO: 'A tiempo', TARDE: 'Tarde', AUSENTE: 'Ausente' };
@@ -253,11 +254,11 @@ export default function Asistencias() {
           fila.sintetico ? (
             <span className="asistencias__sin-registro">Sin registro</span>
           ) : (
-            <>
-              <button type="button" className="asistencias__btn-ver" onClick={() => abrirDetalle(fila)}>Ver</button>
-              <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-              <Button variant="danger" onClick={() => abrirAnular(fila)}>Anular</Button>
-            </>
+            <ActionsMenu acciones={[
+              { etiqueta: 'Ver detalle', onClick: () => abrirDetalle(fila) },
+              { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+              { etiqueta: 'Anular', onClick: () => abrirAnular(fila), variant: 'danger' },
+            ]} />
           )
         )}
         vacioTexto="No hay asistencias registradas con estos filtros."

@@ -19,6 +19,7 @@ import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import SubList from '../../components/ui/SubList';
 import AuditLog from '../../components/ui/AuditLog';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Usuarios.css';
 
 const FORM_VACIO = { nombre: '', email: '', password: '', confirmarPassword: '', rol: 'ADMIN', miembro_id: '' };
@@ -194,19 +195,17 @@ export default function Usuarios() {
           { clave: 'activo', titulo: 'Estado', render: (f) => <StatusBadge texto={f.activo ? 'Activo' : 'Inactivo'} variant={f.activo ? 'success' : 'secondary'} /> },
         ]}
         acciones={(fila) => (
-          <>
-            <Button variant="ghost" onClick={() => abrirDetalle(fila)}>Ver</Button>
-            <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-            <Button variant="secondary" onClick={() => abrirCambiarPassword(fila)}>Contraseña</Button>
-            <Button
-              variant="danger"
-              onClick={() => { setConfirmActivo(fila); setErrorActivo(''); }}
-              disabled={fila.id === usuarioSesion?.id && !!fila.activo}
-              title={fila.id === usuarioSesion?.id && fila.activo ? 'No puedes desactivar tu propia cuenta' : undefined}
-            >
-              {fila.activo ? 'Desactivar' : 'Activar'}
-            </Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Ver detalle', onClick: () => abrirDetalle(fila) },
+            { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+            { etiqueta: 'Cambiar contraseña', onClick: () => abrirCambiarPassword(fila) },
+            {
+              etiqueta: fila.activo ? 'Desactivar' : 'Activar',
+              onClick: () => { setConfirmActivo(fila); setErrorActivo(''); },
+              variant: 'danger',
+              disabled: fila.id === usuarioSesion?.id && !!fila.activo,
+            },
+          ]} />
         )}
         vacioTexto="No hay administradores registrados."
       />

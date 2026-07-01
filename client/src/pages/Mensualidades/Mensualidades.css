@@ -133,3 +133,21 @@
   color: var(--color-secondary);
   font-size: 13px;
 }
+
+.mensualidades__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mensualidades__toggle-exentos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 6px 0;
+}

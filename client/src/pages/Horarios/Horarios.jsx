@@ -16,6 +16,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import AuditLog from '../../components/ui/AuditLog';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import { ETIQUETAS_DIA_SEMANA, formatearHora } from '../../utils/formato';
 import './Horarios.css';
 
@@ -216,17 +217,13 @@ export default function Horarios() {
           { clave: 'activo', titulo: 'Estado', render: (f) => <StatusBadge texto={f.activo ? 'Activo' : 'Inactivo'} variant={f.activo ? 'success' : 'secondary'} /> },
         ]}
         acciones={(fila) => (
-          <>
-            {fila.activo && <Button variant="ghost" onClick={() => abrirQr(fila)}>QR</Button>}
-            <Button variant="ghost" onClick={() => verAuditoria(fila)}>Auditoría</Button>
-            <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-            <Button variant="danger" onClick={() => setConfirmToggle(fila)}>
-              {fila.activo ? 'Desactivar' : 'Activar'}
-            </Button>
-            <Button variant="danger" onClick={() => { setErrorEliminar(''); setConfirmEliminar(fila); }}>
-              Eliminar
-            </Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Ver QR', onClick: () => abrirQr(fila), visible: !!fila.activo },
+            { etiqueta: 'Auditoría', onClick: () => verAuditoria(fila) },
+            { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+            { etiqueta: fila.activo ? 'Desactivar' : 'Activar', onClick: () => setConfirmToggle(fila), variant: 'danger' },
+            { etiqueta: 'Eliminar', onClick: () => { setErrorEliminar(''); setConfirmEliminar(fila); }, variant: 'danger' },
+          ]} />
         )}
         vacioTexto="No hay horarios registrados."
       />
@@ -320,7 +317,7 @@ export default function Horarios() {
       <Modal
         abierto={!!modalQr}
         titulo={modalQr ? `Código QR — ${modalQr.nivel_nombre} (${ETIQUETAS_DIA_SEMANA[modalQr.dia_semana]})` : 'Código QR'}
-        onClose={() => setModalQr(null)}
+        onClose={() => { setModalQr(null); setQrData(null); }}
         ancho="sm"
       >
         {cargandoQr && !qrData ? (

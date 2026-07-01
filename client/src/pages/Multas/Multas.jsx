@@ -15,6 +15,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import { formatearFecha, formatearMoneda } from '../../utils/formato';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Multas.css';
 
 const ETIQUETAS_ESTADO = { PENDIENTE: 'Pendiente', PAGADA: 'Pagada', CONDONADA: 'Condonada' };
@@ -272,16 +273,12 @@ export default function Multas() {
           { clave: 'estado', titulo: 'Estado', render: (f) => <StatusBadge texto={ETIQUETAS_ESTADO[f.estado] || f.estado} variant={VARIANTES_ESTADO[f.estado] || 'secondary'} /> },
         ]}
         acciones={(fila) => (
-          <>
-            <button type="button" className="multas__btn-ver" onClick={() => setDetalle(fila)}>Ver</button>
-            {fila.estado === 'PENDIENTE' && (
-              <>
-                <Button variant="secondary" onClick={() => abrirPagar(fila)}>Marcar Pagada</Button>
-                <Button variant="ghost" onClick={() => abrirCondonar(fila)}>Condonar</Button>
-              </>
-            )}
-            <Button variant="danger" onClick={() => setConfirmEliminar(fila)}>Eliminar</Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Ver detalle', onClick: () => setDetalle(fila) },
+            { etiqueta: 'Marcar Pagada', onClick: () => abrirPagar(fila), visible: fila.estado === 'PENDIENTE' },
+            { etiqueta: 'Condonar', onClick: () => abrirCondonar(fila), visible: fila.estado === 'PENDIENTE' },
+            { etiqueta: 'Eliminar', onClick: () => setConfirmEliminar(fila), variant: 'danger' },
+          ]} />
         )}
         vacioTexto="No hay multas registradas con estos filtros."
       />

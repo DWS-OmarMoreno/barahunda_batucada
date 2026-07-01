@@ -206,3 +206,10 @@
 }
 
 .portal__form { display: flex; flex-direction: column; gap: 14px; }
+
+.portal__soporte-link {
+  color: var(--color-primary);
+  font-size: 13px;
+  text-decoration: none;
+}
+.portal__soporte-link:hover { text-decoration: underline; }

@@ -18,6 +18,7 @@ import FormField from '../../components/ui/FormField';
 import SubList from '../../components/ui/SubList';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { formatearFecha, formatearMoneda } from '../../utils/formato';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Eventos.css';
 
 const ETIQUETAS_TIPO = { PAGO: 'Pago', BENEFICO: 'Benéfico' };
@@ -237,11 +238,11 @@ export default function Eventos() {
           { clave: 'total_asignado', titulo: 'Asignado', render: (f) => formatearMoneda(f.total_asignado) },
         ]}
         acciones={(fila) => (
-          <>
-            <button type="button" className="eventos__btn-ver" onClick={() => abrirDetalle(fila.id)}>Ver</button>
-            <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-            <Button variant="ghost" onClick={() => setConfirmarEliminar(fila)}>Eliminar</Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Ver detalle', onClick: () => abrirDetalle(fila.id) },
+            { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+            { etiqueta: 'Eliminar', onClick: () => setConfirmarEliminar(fila), variant: 'danger' },
+          ]} />
         )}
         vacioTexto="No hay eventos registrados con estos filtros."
       />

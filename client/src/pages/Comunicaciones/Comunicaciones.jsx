@@ -19,6 +19,7 @@ import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import WhatsAppButton from '../../components/ui/WhatsAppButton';
 import { formatearFechaHora } from '../../utils/formato';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Comunicaciones.css';
 
 const VARIABLES_DISPONIBLES = [
@@ -213,10 +214,10 @@ function TabPlantillas({ plantillas, cargando, onRecargar }) {
           },
         ]}
         acciones={(fila) => (
-          <>
-            <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-            <Button variant="ghost" onClick={() => setEliminarObjetivo(fila)}>Eliminar</Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+            { etiqueta: 'Eliminar', onClick: () => setEliminarObjetivo(fila), variant: 'danger' },
+          ]} />
         )}
         vacioTexto="No hay plantillas creadas."
       />

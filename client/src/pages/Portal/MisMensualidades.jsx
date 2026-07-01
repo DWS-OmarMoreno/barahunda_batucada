@@ -27,7 +27,7 @@ export default function MisMensualidades() {
         <div className="portal__tabla-wrapper">
           <table className="portal__tabla">
             <thead>
-              <tr><th>Período</th><th>Valor</th><th>Fecha de pago</th><th>Observaciones</th></tr>
+              <tr><th>Período</th><th>Valor</th><th>Fecha de pago</th><th>Observaciones</th><th>Soporte</th></tr>
             </thead>
             <tbody>
               {pagos.map((p) => (
@@ -36,6 +36,11 @@ export default function MisMensualidades() {
                   <td>{formatearMoneda(p.valor)}</td>
                   <td>{formatearFecha(p.fecha_pago)}</td>
                   <td>{p.observaciones || '—'}</td>
+                  <td>
+                    {p.soporte_url
+                      ? <a href={p.soporte_url} target="_blank" rel="noreferrer" className="portal__soporte-link">Ver soporte</a>
+                      : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

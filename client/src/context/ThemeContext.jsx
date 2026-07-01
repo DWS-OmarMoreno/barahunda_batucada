@@ -51,6 +51,18 @@ export function ThemeProvider({ children }) {
     cargarConfiguracion();
   }, [cargarConfiguracion]);
 
+  // Actualiza el título de la pestaña y el favicon cuando carga la config
+  useEffect(() => {
+    if (!config) return;
+    if (config.escuela_nombre) {
+      document.title = config.escuela_nombre;
+    }
+    if (config.escuela_logo) {
+      const link = document.getElementById('favicon') || document.querySelector("link[rel='icon']");
+      if (link) link.href = config.escuela_logo;
+    }
+  }, [config]);
+
   // Permite previsualizar colores en tiempo real (p.ej. en el color picker
   // de Configuración) sin necesidad de guardar todavía en el servidor.
   const previsualizarColores = useCallback((colores) => {

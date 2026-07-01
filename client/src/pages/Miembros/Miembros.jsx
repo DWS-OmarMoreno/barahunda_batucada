@@ -15,6 +15,7 @@ import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import { formatearFecha } from '../../utils/formato';
 import MiembroDetalle from './MiembroDetalle';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Miembros.css';
 
 const TIPOS_DOCUMENTO = [
@@ -224,16 +225,12 @@ export default function Miembros() {
           { clave: 'activo', titulo: 'Estado', render: (f) => <StatusBadge texto={f.activo ? 'Activo' : 'Inactivo'} variant={f.activo ? 'success' : 'secondary'} /> },
         ]}
         acciones={(fila) => (
-          <>
-            <Button variant="ghost" onClick={() => setDetalleId(fila.id)}>Ver</Button>
-            <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
-            <Button variant="secondary" onClick={() => enviarRecordatorio(fila)} loading={enviandoWhatsapp === fila.id}>
-              WhatsApp
-            </Button>
-            <Button variant="danger" onClick={() => setConfirmInactivar(fila)}>
-              {fila.activo ? 'Inactivar' : 'Activar'}
-            </Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Ver detalle', onClick: () => setDetalleId(fila.id) },
+            { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
+            { etiqueta: 'WhatsApp', onClick: () => enviarRecordatorio(fila) },
+            { etiqueta: fila.activo ? 'Inactivar' : 'Activar', onClick: () => setConfirmInactivar(fila), variant: 'danger' },
+          ]} />
         )}
         vacioTexto="No hay miembros registrados."
       />

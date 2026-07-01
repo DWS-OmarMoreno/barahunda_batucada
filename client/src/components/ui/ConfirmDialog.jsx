@@ -29,7 +29,7 @@ export default function ConfirmDialog({
         </>
       }
     >
-      <p>{mensaje}</p>
+      <div className="confirm-dialog__mensaje">{mensaje}</div>
     </Modal>
   );
 }

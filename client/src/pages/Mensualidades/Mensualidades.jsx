@@ -7,6 +7,7 @@ import {
   eliminarPagoMensualidad,
 } from '../../services/mensualidades.service';
 import { obtenerWhatsappRecordatorio } from '../../services/miembros.service';
+import { listarNiveles } from '../../services/niveles.service';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Modal from '../../components/ui/Modal';
@@ -15,6 +16,7 @@ import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import UploadField from '../../components/ui/UploadField';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import ActionsMenu from '../../components/ui/ActionsMenu';
 import { formatearFecha, formatearMoneda, NOMBRES_MES } from '../../utils/formato';
 import './Mensualidades.css';
 
@@ -28,6 +30,13 @@ export default function Mensualidades() {
   const [anio, setAnio] = useState(AHORA.getFullYear());
   const [filas, setFilas] = useState([]);
   const [cargando, setCargando] = useState(true);
+
+  // Filtros cliente
+  const [niveles, setNiveles] = useState([]);
+  const [filtroNivel, setFiltroNivel] = useState('');
+  const [filtroMiembro, setFiltroMiembro] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [ocultarExentos, setOcultarExentos] = useState(true);
 
   const [modalValor, setModalValor] = useState(null);
   const [valorEditado, setValorEditado] = useState('');
@@ -64,9 +73,26 @@ export default function Mensualidades() {
     cargar();
   }, [cargar]);
 
-  const totalMiembros = filas.length;
-  const totalEsperado = filas.reduce((acc, f) => acc + f.valor_mensualidad, 0);
-  const totalRecaudado = filas.reduce((acc, f) => acc + f.total_pagado, 0);
+  useEffect(() => {
+    listarNiveles({ limit: 100, activo: '1' }).then((r) => setNiveles(r.data)).catch(() => setNiveles([]));
+  }, []);
+
+  // Aplicar filtros cliente sobre las filas ya cargadas
+  const filasFiltradas = filas.filter((f) => {
+    if (ocultarExentos && f.estado === 'EXENTO') return false;
+    if (filtroEstado && f.estado !== filtroEstado) return false;
+    if (filtroNivel && String(f.nivel_id) !== String(filtroNivel)) return false;
+    if (filtroMiembro) {
+      const q = filtroMiembro.toLowerCase();
+      if (!f.nombres_completos?.toLowerCase().includes(q) && !f.numero_documento?.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Los KPIs se calculan sobre las filas sin filtrar (visión global del mes)
+  const totalMiembros = filas.filter((f) => f.estado !== 'EXENTO').length;
+  const totalEsperado = filas.filter((f) => f.estado !== 'EXENTO').reduce((acc, f) => acc + f.valor_mensualidad, 0);
+  const totalRecaudado = filas.filter((f) => f.estado !== 'EXENTO').reduce((acc, f) => acc + f.total_pagado, 0);
   const totalPagados = filas.filter((f) => f.estado === 'PAGADO').length;
   const cumplimiento = totalMiembros > 0 ? Math.round((totalPagados / totalMiembros) * 100) : 0;
 
@@ -204,16 +230,44 @@ export default function Mensualidades() {
         </div>
         <div className="mensualidades__indicador">
           <span className="mensualidades__indicador-valor">{totalMiembros}</span>
-          <span className="mensualidades__indicador-etiqueta">Miembros</span>
+          <span className="mensualidades__indicador-etiqueta">Miembros (no exentos)</span>
         </div>
       </div>
 
       <DataTable
         cargando={cargando}
-        datos={filas}
+        datos={filasFiltradas}
         claveFila={(f) => f.miembro_id}
+        filtros={
+          <div className="mensualidades__filtros">
+            <input
+              type="text"
+              className="mensualidades__select-filtro"
+              placeholder="Buscar miembro..."
+              value={filtroMiembro}
+              onChange={(e) => setFiltroMiembro(e.target.value)}
+            />
+            <select className="mensualidades__select-filtro" value={filtroNivel} onChange={(e) => setFiltroNivel(e.target.value)}>
+              <option value="">Todos los niveles</option>
+              {niveles.map((n) => <option key={n.id} value={n.id}>{n.nombre}</option>)}
+            </select>
+            <select className="mensualidades__select-filtro" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+              <option value="">Todos los estados</option>
+              {Object.entries(ETIQUETAS_ESTADO).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <label className="mensualidades__toggle-exentos">
+              <input
+                type="checkbox"
+                checked={ocultarExentos}
+                onChange={(e) => setOcultarExentos(e.target.checked)}
+              />
+              Ocultar exentos
+            </label>
+          </div>
+        }
         columnas={[
           { clave: 'nombres_completos', titulo: 'Miembro' },
+          { clave: 'nivel_nombre', titulo: 'Nivel', render: (f) => f.nivel_nombre || '—' },
           { clave: 'numero_documento', titulo: 'Documento' },
           {
             clave: 'valor_mensualidad',
@@ -229,13 +283,11 @@ export default function Mensualidades() {
           { clave: 'estado', titulo: 'Estado', render: (f) => <StatusBadge texto={ETIQUETAS_ESTADO[f.estado]} variant={VARIANTES_ESTADO[f.estado]} /> },
         ]}
         acciones={(fila) => (
-          <>
-            <Button variant="secondary" onClick={() => abrirRegistrarPago(fila)}>Registrar Pago</Button>
-            <Button variant="ghost" onClick={() => abrirHistorial(fila)}>Historial</Button>
-            <Button variant="secondary" onClick={() => enviarRecordatorio(fila)} loading={enviandoWhatsapp === fila.miembro_id}>
-              WhatsApp
-            </Button>
-          </>
+          <ActionsMenu acciones={[
+            { etiqueta: 'Registrar pago', onClick: () => abrirRegistrarPago(fila) },
+            { etiqueta: 'Historial', onClick: () => abrirHistorial(fila) },
+            { etiqueta: 'WhatsApp', onClick: () => enviarRecordatorio(fila) },
+          ]} />
         )}
         vacioTexto="No hay miembros activos para mostrar."
       />
