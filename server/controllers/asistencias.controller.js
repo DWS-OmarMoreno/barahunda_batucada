@@ -14,15 +14,40 @@ const puntoRegistroModel = require('../models/puntoRegistro.model');
 const MODULO = 'ASISTENCIAS';
 const DIAS_SEMANA_JS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
-// Fecha/hora locales del servidor en formato MySQL ('YYYY-MM-DD' / 'HH:MM:SS'),
-// calculadas a mano (sin toISOString) para evitar el desface a UTC.
-function fechaHoraLocal() {
+// Fecha/hora en la zona horaria configurada en la BD (configuracion.zona_horaria).
+// Usa Intl.DateTimeFormat para evitar depender de la TZ del servidor (el VPS
+// corre en UTC) y respetar la zona del usuario en su lugar.
+const DIA_EN_ES = {
+  Monday: 'LUNES', Tuesday: 'MARTES', Wednesday: 'MIERCOLES',
+  Thursday: 'JUEVES', Friday: 'VIERNES', Saturday: 'SABADO', Sunday: 'DOMINGO',
+};
+
+async function fechaHoraLocal() {
+  const configuracion = await configuracionModel.obtener();
+  const tz = configuracion?.zona_horaria || 'America/Bogota';
   const ahora = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
+
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(ahora)
+      .filter((p) => p.type !== 'literal')
+      .map((p) => [p.type, p.value])
+  );
+
   return {
-    fecha: `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`,
-    hora: `${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
-    diaSemana: DIAS_SEMANA_JS[ahora.getDay()],
+    fecha: `${partes.year}-${partes.month}-${partes.day}`,
+    hora: `${partes.hour}:${partes.minute}:${partes.second}`,
+    diaSemana: DIA_EN_ES[partes.weekday] || partes.weekday.toUpperCase(),
   };
 }
 
@@ -223,7 +248,7 @@ async function registrarPublica(req, res, next) {
       return fail(res, { message: 'No estás inscrito en el nivel de este horario', status: 400 });
     }
 
-    const { fecha, hora, diaSemana } = fechaHoraLocal();
+    const { fecha, hora, diaSemana } = await fechaHoraLocal();
     if (horario.dia_semana !== diaSemana) {
       return fail(res, { message: 'Este horario no corresponde a la clase de hoy', status: 400 });
     }
@@ -278,7 +303,7 @@ async function registrarPuntoFijo(req, res, next) {
       return fail(res, { message: 'Este miembro no está inscrito en ningún nivel', status: 400 });
     }
 
-    const { fecha, hora, diaSemana } = fechaHoraLocal();
+    const { fecha, hora, diaSemana } = await fechaHoraLocal();
 
     // De todos los niveles del miembro, busca los horarios de hoy que estén
     // en curso justo ahora; si hay más de uno (p. ej. inscrito en niveles
