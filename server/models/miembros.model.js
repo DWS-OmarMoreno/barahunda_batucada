@@ -125,4 +125,9 @@ async function cambiarActivo(id, activo) {
   return { anterior: actual, nuevo };
 }
 
-module.exports = { CAMPOS, listar, obtenerPorId, obtenerPorDocumento, crear, actualizar, cambiarActivo, asignarCorreoInstitucional };
+// Borra el correo institucional de un miembro para poder regenerarlo.
+async function limpiarCorreoInstitucional(id) {
+  await pool.query('UPDATE miembros SET correo_institucional = NULL WHERE id = ?', [id]);
+}
+
+module.exports = { CAMPOS, listar, obtenerPorId, obtenerPorDocumento, crear, actualizar, cambiarActivo, asignarCorreoInstitucional, limpiarCorreoInstitucional };

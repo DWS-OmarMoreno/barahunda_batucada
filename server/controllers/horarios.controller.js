@@ -3,6 +3,7 @@ const { ok, fail } = require('../utils/respuesta');
 const { obtenerParametros, construirPaginacion } = require('../utils/paginacion');
 const horariosModel = require('../models/horarios.model');
 const asistenciaToken = require('../utils/asistenciaToken');
+const { getFrontendUrl } = require('../utils/frontendUrl');
 const { pool } = require('../config/db');
 
 const DIAS_VALIDOS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
@@ -104,7 +105,7 @@ async function qr(req, res, next) {
     if (!horario.activo) return fail(res, { message: 'Este horario está inactivo', status: 400 });
 
     const { token, expiraEnMs, intervaloMs } = asistenciaToken.generarToken(horario.id);
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const frontendUrl = await getFrontendUrl();
     const url = `${frontendUrl}/asistencia?horario_id=${horario.id}&token=${token}`;
     const qrDataUrl = await QRCode.toDataURL(url, { width: 320, margin: 1 });
 

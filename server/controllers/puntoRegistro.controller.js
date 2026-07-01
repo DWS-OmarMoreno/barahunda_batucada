@@ -1,15 +1,16 @@
 const { ok } = require('../utils/respuesta');
 const puntoRegistroModel = require('../models/puntoRegistro.model');
+const { getFrontendUrl } = require('../utils/frontendUrl');
 
 const MODULO = 'PUNTO_REGISTRO';
 
-function construirUrl(token) {
-  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+async function construirUrl(token) {
+  const frontendUrl = await getFrontendUrl();
   return `${frontendUrl}/asistencia?token=${token}`;
 }
 
-function conUrl(punto) {
-  return { ...punto, url: construirUrl(punto.token) };
+async function conUrl(punto) {
+  return { ...punto, url: await construirUrl(punto.token) };
 }
 
 // GET /api/punto-registro — protegida (admin). Si todavía no existe ningún
@@ -17,7 +18,7 @@ function conUrl(punto) {
 async function obtener(req, res, next) {
   try {
     const punto = await puntoRegistroModel.obtenerOcrear();
-    return ok(res, { data: conUrl(punto), message: 'Punto de registro obtenido' });
+    return ok(res, { data: await conUrl(punto), message: 'Punto de registro obtenido' });
   } catch (err) {
     next(err);
   }
@@ -40,7 +41,7 @@ async function regenerar(req, res, next) {
       });
     }
 
-    return ok(res, { data: conUrl(nuevo), message: 'Enlace regenerado correctamente. El enlace anterior ya no funciona.' });
+    return ok(res, { data: await conUrl(nuevo), message: 'Enlace regenerado correctamente. El enlace anterior ya no funciona.' });
   } catch (err) {
     next(err);
   }

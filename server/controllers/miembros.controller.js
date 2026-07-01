@@ -416,6 +416,8 @@ async function concederAcceso(req, res, next) {
 }
 
 // POST /api/miembros/:id/remover-acceso
+// Desactiva la cuenta del portal, limpia el correo institucional y lo regenera
+// para que el próximo acceso parta de credenciales frescas.
 async function removerAcceso(req, res, next) {
   try {
     const miembro = await miembrosModel.obtenerPorId(req.params.id);
@@ -423,11 +425,30 @@ async function removerAcceso(req, res, next) {
 
     await usuarioModel.removerAcceso(miembro.id);
 
-    if (req.auditoria) {
-      await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'UPDATE', entidadId: miembro.id, detalle: { acceso_portal: 'removido' } });
+    // Limpiar correo institucional y regenerarlo si hay dominio configurado
+    const correoAnterior = miembro.correo_institucional;
+    let correoNuevo = null;
+    await miembrosModel.limpiarCorreoInstitucional(miembro.id);
+    const config = await configuracionModel.obtener();
+    if (config?.dominio) {
+      const miembroActualizado = await miembrosModel.asignarCorreoInstitucional(miembro.id, config.dominio);
+      correoNuevo = miembroActualizado?.correo_institucional || null;
     }
 
-    return ok(res, { message: 'Acceso al portal removido correctamente.' });
+    if (req.auditoria) {
+      await req.auditoria.registrarAccion({
+        modulo: MODULO,
+        accion: 'UPDATE',
+        entidadId: miembro.id,
+        detalle: { acceso_portal: 'removido', correo_institucional_anterior: correoAnterior, correo_institucional_nuevo: correoNuevo },
+      });
+    }
+
+    return ok(res, {
+      message: correoNuevo
+        ? `Acceso removido. Correo institucional regenerado: ${correoNuevo}`
+        : 'Acceso al portal removido. Configura un dominio para regenerar el correo institucional.',
+    });
   } catch (err) {
     next(err);
   }
