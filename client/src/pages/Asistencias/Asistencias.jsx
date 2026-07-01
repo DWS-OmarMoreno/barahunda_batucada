@@ -4,6 +4,7 @@ import {
   obtenerAsistencia,
   obtenerAuditoriaAsistencia,
   anularAsistencia,
+  editarAsistencia,
 } from '../../services/asistencias.service';
 import { listarNiveles } from '../../services/niveles.service';
 import { listarMiembros } from '../../services/miembros.service';
@@ -38,6 +39,11 @@ export default function Asistencias() {
   const [motivoAnulacion, setMotivoAnulacion] = useState('');
   const [guardandoAnular, setGuardandoAnular] = useState(false);
   const [error, setError] = useState('');
+
+  const [modalEditar, setModalEditar] = useState(null);
+  const [formEditar, setFormEditar] = useState({ estado: '', hora: '', motivo: '' });
+  const [guardandoEditar, setGuardandoEditar] = useState(false);
+  const [errorEditar, setErrorEditar] = useState('');
 
   // Trae asistencias reales + filas sintéticas "Ausente" para los miembros
   // inscritos que no registraron asistencia en una clase que les
@@ -95,6 +101,48 @@ export default function Asistencias() {
       // si falla, se deja el detalle parcial ya cargado desde la tabla
     } finally {
       setCargandoDetalle(false);
+    }
+  }
+
+  function abrirEditar(asistencia) {
+    setModalEditar(asistencia);
+    setFormEditar({
+      estado: asistencia.estado || 'A_TIEMPO',
+      hora: asistencia.hora ? String(asistencia.hora).slice(0, 5) : '',
+      motivo: '',
+    });
+    setErrorEditar('');
+  }
+
+  async function guardarEditar(e) {
+    e.preventDefault();
+    if (!formEditar.motivo.trim()) {
+      setErrorEditar('El motivo del cambio es obligatorio');
+      return;
+    }
+    setGuardandoEditar(true);
+    setErrorEditar('');
+    try {
+      await editarAsistencia(modalEditar.id, {
+        estado: formEditar.estado,
+        hora: formEditar.hora || undefined,
+        motivo: formEditar.motivo.trim(),
+      });
+      setModalEditar(null);
+      // Refrescar detalle si está abierto
+      if (detalle?.id === modalEditar.id) {
+        const [r1, r2] = await Promise.all([
+          obtenerAsistencia(modalEditar.id),
+          obtenerAuditoriaAsistencia(modalEditar.id),
+        ]);
+        setDetalle(r1.data);
+        setAuditoria(r2.data);
+      }
+      cargar();
+    } catch (err) {
+      setErrorEditar(err.response?.data?.message || 'No se pudo editar la asistencia');
+    } finally {
+      setGuardandoEditar(false);
     }
   }
 
@@ -207,6 +255,7 @@ export default function Asistencias() {
           ) : (
             <>
               <button type="button" className="asistencias__btn-ver" onClick={() => abrirDetalle(fila)}>Ver</button>
+              <Button variant="secondary" onClick={() => abrirEditar(fila)}>Editar</Button>
               <Button variant="danger" onClick={() => abrirAnular(fila)}>Anular</Button>
             </>
           )
@@ -269,6 +318,56 @@ export default function Asistencias() {
               required
             />
             {error && <p className="asistencias__error">{error}</p>}
+          </form>
+        )}
+      </Modal>
+      <Modal
+        abierto={!!modalEditar}
+        titulo="Editar asistencia"
+        onClose={() => setModalEditar(null)}
+        ancho="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModalEditar(null)}>Cancelar</Button>
+            <Button onClick={guardarEditar} loading={guardandoEditar}>Guardar cambios</Button>
+          </>
+        }
+      >
+        {modalEditar && (
+          <form onSubmit={guardarEditar} className="asistencias__form-anular">
+            <p><strong>{modalEditar.miembro_nombre}</strong> — {formatearFecha(modalEditar.fecha)} {formatearHora(modalEditar.hora)}</p>
+            <p className="asistencias__nota">
+              El cambio quedará registrado en la auditoría de esta asistencia con tu usuario y el motivo indicado.
+            </p>
+            <FormField
+              label="Nuevo estado"
+              type="select"
+              name="estado"
+              value={formEditar.estado}
+              onChange={(e) => setFormEditar((p) => ({ ...p, estado: e.target.value }))}
+              options={[
+                { value: 'A_TIEMPO', label: 'A tiempo' },
+                { value: 'TARDE', label: 'Tarde' },
+                { value: 'AUSENTE', label: 'Ausente' },
+              ]}
+            />
+            <FormField
+              label="Hora (opcional, formato HH:MM)"
+              type="time"
+              name="hora"
+              value={formEditar.hora}
+              onChange={(e) => setFormEditar((p) => ({ ...p, hora: e.target.value }))}
+              helpText="Deja vacío para conservar la hora original."
+            />
+            <FormField
+              label="Motivo del cambio"
+              type="textarea"
+              name="motivo"
+              value={formEditar.motivo}
+              onChange={(e) => setFormEditar((p) => ({ ...p, motivo: e.target.value }))}
+              required
+            />
+            {errorEditar && <p className="asistencias__error">{errorEditar}</p>}
           </form>
         )}
       </Modal>

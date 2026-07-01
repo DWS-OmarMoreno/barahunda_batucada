@@ -41,7 +41,7 @@ async function obtener(req, res, next) {
 
 async function crear(req, res, next) {
   try {
-    const { nombre, email, password, rol } = req.body || {};
+    const { nombre, email, password, rol, miembro_id } = req.body || {};
     if (!nombre || !nombre.trim()) {
       return fail(res, { message: 'El nombre es obligatorio', status: 400 });
     }
@@ -52,17 +52,23 @@ async function crear(req, res, next) {
       return fail(res, { message: 'La contraseña debe tener al menos 6 caracteres', status: 400 });
     }
 
+    const rolNormalizado = rol === 'MIEMBRO' ? 'MIEMBRO' : 'ADMIN';
+    if (rolNormalizado === 'MIEMBRO' && !miembro_id) {
+      return fail(res, { message: 'Los usuarios tipo MIEMBRO deben estar vinculados a un miembro', status: 400 });
+    }
+
     const emailNormalizado = email.trim().toLowerCase();
     const existente = await usuarioModel.buscarPorEmail(emailNormalizado);
     if (existente) {
-      return fail(res, { message: 'Ya existe un administrador con ese email', status: 409 });
+      return fail(res, { message: 'Ya existe un usuario con ese email', status: 409 });
     }
 
     const usuario = await usuarioModel.crear({
       nombre: nombre.trim(),
       email: emailNormalizado,
       password,
-      rol: rol || 'ADMIN',
+      rol: rolNormalizado,
+      miembro_id: miembro_id || null,
     });
 
     if (req.auditoria) {
@@ -74,7 +80,7 @@ async function crear(req, res, next) {
       });
     }
 
-    return ok(res, { data: usuario, message: 'Administrador creado correctamente', status: 201 });
+    return ok(res, { data: usuario, message: 'Usuario creado correctamente', status: 201 });
   } catch (err) {
     next(err);
   }
@@ -97,9 +103,11 @@ async function actualizar(req, res, next) {
       }
     }
 
+    const { miembro_id } = req.body || {};
     const { anterior, nuevo } = await usuarioModel.actualizar(req.params.id, {
       nombre: nombre !== undefined ? nombre.trim() : undefined,
       email: emailNormalizado,
+      miembro_id,
     });
 
     if (req.auditoria) {

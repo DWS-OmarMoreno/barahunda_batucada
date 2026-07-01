@@ -30,6 +30,11 @@ export async function anularAsistencia(id, motivo) {
   return data;
 }
 
+export async function editarAsistencia(id, { estado, hora, motivo }) {
+  const { data } = await api.patch(`/asistencias/${id}/editar`, { estado, hora, motivo });
+  return data;
+}
+
 // Endpoint público del portal /asistencia (no requiere sesión). horarioId y
 // token vienen del QR escaneado (ver server/utils/asistenciaToken.js) y son
 // obligatorios: sin ellos el backend rechaza el registro.

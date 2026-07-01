@@ -23,3 +23,8 @@ export async function obtenerAuditoriaConfiguracion() {
   const { data } = await api.get('/configuracion/auditoria');
   return data;
 }
+
+export async function probarSmtp() {
+  const { data } = await api.post('/configuracion/smtp/test');
+  return data;
+}

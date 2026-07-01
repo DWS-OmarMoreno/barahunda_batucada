@@ -130,6 +130,46 @@ async function anular(id, motivo, anuladoPor) {
   return { anterior: actual, nuevo };
 }
 
+// Edición manual de una asistencia por el administrador.
+// Solo se puede editar estado y/o hora. Siempre queda registrado
+// quién lo hizo, cuándo y por qué (modificado_manualmente = 1).
+// Si cambia la hora, se recalculan los minutos_retraso automáticamente.
+async function editar(id, { estado, hora, motivo }, modificadoPor) {
+  const actual = await obtenerPorId(id);
+  if (!actual) throw Object.assign(new Error('Asistencia no encontrada'), { status: 404 });
+  if (!actual.activo) throw Object.assign(new Error('No se puede editar una asistencia anulada'), { status: 400 });
+  if (!motivo) throw Object.assign(new Error('Debes indicar el motivo de la modificación'), { status: 400 });
+
+  const nuevoEstado = estado || actual.estado;
+  const nuevaHora = hora || actual.hora;
+
+  // Recalcular minutos_retraso si hay horario vinculado y la hora cambió
+  let nuevosMinutos = actual.minutos_retraso;
+  if (hora && actual.horario_id) {
+    const [[horario]] = await pool.query(
+      'SELECT hora_inicio, tolerancia_minutos FROM horarios WHERE id = ?',
+      [actual.horario_id]
+    );
+    if (horario) {
+      const [hi, mi] = String(horario.hora_inicio).split(':').map(Number);
+      const [ha, ma] = String(nuevaHora).split(':').map(Number);
+      const diff = (ha * 60 + ma) - (hi * 60 + mi);
+      const tolerancia = horario.tolerancia_minutos ?? 10;
+      nuevosMinutos = diff > tolerancia ? diff : 0;
+    }
+  }
+
+  await pool.query(
+    `UPDATE asistencias
+     SET estado = ?, hora = ?, minutos_retraso = ?, modificado_manualmente = 1,
+         motivo_modificacion = ?, modificado_por = ?, fecha_modificacion = NOW()
+     WHERE id = ?`,
+    [nuevoEstado, nuevaHora, nuevosMinutos, motivo, modificadoPor || null, id]
+  );
+  const nuevo = await obtenerPorId(id);
+  return { anterior: actual, nuevo };
+}
+
 module.exports = {
   listar,
   listarTodas,
@@ -138,4 +178,5 @@ module.exports = {
   buscarHoyPorMiembroYHorario,
   crear,
   anular,
+  editar,
 };

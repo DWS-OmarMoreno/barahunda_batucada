@@ -141,4 +141,36 @@ async function auditoria(req, res, next) {
   }
 }
 
-module.exports = { listar, obtener, crear, actualizar, toggle, qr, auditoria };
+// DELETE /api/horarios/:id — soft-delete (activo = 0)
+// Si tiene asistencias activas recientes se rechaza para proteger la integridad.
+async function eliminar(req, res, next) {
+  try {
+    const horario = await horariosModel.obtenerPorId(req.params.id);
+    if (!horario) return fail(res, { message: 'Horario no encontrado', status: 404 });
+
+    // Verificar que no tenga asistencias activas en los últimos 60 días
+    const [asistencias] = await pool.query(
+      `SELECT COUNT(*) AS total FROM asistencias
+       WHERE horario_id = ? AND activo = 1 AND fecha >= DATE_SUB(CURDATE(), INTERVAL 60 DAY)`,
+      [req.params.id]
+    );
+    if (asistencias[0].total > 0) {
+      return fail(res, {
+        message: `Este horario tiene ${asistencias[0].total} asistencias registradas en los últimos 60 días. Desactívalo en lugar de eliminarlo.`,
+        status: 409,
+      });
+    }
+
+    const { anterior, nuevo } = await horariosModel.cambiarActivo(req.params.id, false);
+
+    if (req.auditoria) {
+      await req.auditoria.registrarAccion({ modulo: 'HORARIOS', accion: 'DELETE', entidadId: horario.id, detalle: anterior });
+    }
+
+    return ok(res, { data: nuevo, message: 'Horario eliminado correctamente' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listar, obtener, crear, actualizar, toggle, qr, auditoria, eliminar };

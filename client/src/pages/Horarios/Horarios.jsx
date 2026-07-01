@@ -4,6 +4,7 @@ import {
   crearHorario,
   actualizarHorario,
   toggleHorario,
+  eliminarHorario,
   obtenerAuditoriaHorario,
   obtenerQrHorario,
 } from '../../services/horarios.service';
@@ -41,6 +42,9 @@ export default function Horarios() {
   const [error, setError] = useState('');
 
   const [confirmToggle, setConfirmToggle] = useState(null);
+  const [confirmEliminar, setConfirmEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState('');
   const [detalleAuditoria, setDetalleAuditoria] = useState(null);
   const [auditoria, setAuditoria] = useState([]);
 
@@ -134,6 +138,20 @@ export default function Horarios() {
     }
   }
 
+  async function confirmarEliminar() {
+    if (!confirmEliminar) return;
+    setEliminando(true);
+    setErrorEliminar('');
+    try {
+      await eliminarHorario(confirmEliminar.id);
+      setConfirmEliminar(null);
+      cargar();
+    } catch (err) {
+      setErrorEliminar(err.response?.data?.message || 'No se pudo eliminar el horario');
+      setEliminando(false);
+    }
+  }
+
   async function verAuditoria(horario) {
     setDetalleAuditoria(horario);
     try {
@@ -205,6 +223,9 @@ export default function Horarios() {
             <Button variant="danger" onClick={() => setConfirmToggle(fila)}>
               {fila.activo ? 'Desactivar' : 'Activar'}
             </Button>
+            <Button variant="danger" onClick={() => { setErrorEliminar(''); setConfirmEliminar(fila); }}>
+              Eliminar
+            </Button>
           </>
         )}
         vacioTexto="No hay horarios registrados."
@@ -275,6 +296,21 @@ export default function Horarios() {
         onConfirmar={confirmarToggle}
         onCancelar={() => setConfirmToggle(null)}
         textoConfirmar={confirmToggle?.activo ? 'Desactivar' : 'Activar'}
+      />
+
+      <ConfirmDialog
+        abierto={!!confirmEliminar}
+        titulo="Eliminar horario"
+        mensaje={
+          <>
+            <p>¿Seguro que deseas eliminar el horario de <strong>{confirmEliminar?.nivel_nombre}</strong> ({confirmEliminar ? ETIQUETAS_DIA_SEMANA[confirmEliminar.dia_semana] : ''})? Esta acción es irreversible.</p>
+            {errorEliminar && <p style={{ color: 'var(--color-danger)', marginTop: '8px', fontSize: '13px' }}>{errorEliminar}</p>}
+          </>
+        }
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => { setConfirmEliminar(null); setErrorEliminar(''); }}
+        textoConfirmar="Eliminar"
+        cargando={eliminando}
       />
 
       <Modal abierto={!!detalleAuditoria} titulo="Auditoría del horario" onClose={() => setDetalleAuditoria(null)} ancho="lg">

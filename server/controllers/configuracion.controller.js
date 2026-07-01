@@ -4,9 +4,10 @@ const { pool } = require('../config/db');
 
 // GET /api/configuracion — pública, se consulta antes de iniciar sesión
 // para aplicar el tema de colores y el nombre/logo de la escuela.
+// smtp_password se omite siempre de la respuesta por seguridad.
 async function obtener(req, res, next) {
   try {
-    const config = await configuracionModel.obtener();
+    const config = await configuracionModel.obtener({ incluirSecretos: false });
     if (!config) return fail(res, { message: 'No hay configuración registrada', status: 404 });
     return ok(res, { data: config, message: 'Configuración obtenida' });
   } catch (err) {
@@ -63,4 +64,15 @@ async function obtenerAuditoria(req, res, next) {
   }
 }
 
-module.exports = { obtener, actualizar, subirLogo, obtenerAuditoria };
+// POST /api/configuracion/smtp/test — verifica la conexión SMTP con los datos guardados
+async function probarSmtp(req, res, next) {
+  try {
+    const { verificarConexion } = require('../utils/email');
+    await verificarConexion();
+    return ok(res, { data: null, message: 'Conexión SMTP verificada correctamente' });
+  } catch (err) {
+    return fail(res, { message: `Error de conexión SMTP: ${err.message}`, status: 400 });
+  }
+}
+
+module.exports = { obtener, actualizar, subirLogo, obtenerAuditoria, probarSmtp };

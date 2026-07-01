@@ -18,6 +18,7 @@ router.get('/reporte', verifyToken, controller.reporte);
 router.get('/con-ausentes', verifyToken, controller.conAusentes);
 router.get('/:id', verifyToken, controller.obtener);
 router.patch('/:id/anular', verifyToken, auditoriaMiddleware, controller.anular);
+router.patch('/:id/editar', verifyToken, auditoriaMiddleware, controller.editar);
 router.get('/:id/auditoria', verifyToken, controller.auditoria);
 
 module.exports = router;

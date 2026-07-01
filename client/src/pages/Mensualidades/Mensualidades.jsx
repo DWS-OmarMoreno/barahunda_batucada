@@ -331,7 +331,7 @@ export default function Mensualidades() {
               ) : (
                 historial.pagos?.length > 0 && (
                   <table className="mensualidades__tabla">
-                    <thead><tr><th>Mes</th><th>Valor</th><th>Fecha de pago</th><th>Observaciones</th><th></th></tr></thead>
+                    <thead><tr><th>Mes</th><th>Valor</th><th>Fecha de pago</th><th>Observaciones</th><th>Soporte</th><th></th></tr></thead>
                     <tbody>
                       {historial.pagos.map((p) => (
                         <tr key={p.id}>
@@ -339,6 +339,11 @@ export default function Mensualidades() {
                           <td>{formatearMoneda(p.valor)}</td>
                           <td>{formatearFecha(p.fecha_pago)}</td>
                           <td>{p.observaciones || '—'}</td>
+                          <td>
+                            {p.soporte_url
+                              ? <a href={p.soporte_url} target="_blank" rel="noreferrer" className="mensualidades__soporte-link">Ver soporte</a>
+                              : <span className="mensualidades__soporte-vacio">—</span>}
+                          </td>
                           <td>
                             <Button variant="danger" onClick={() => setConfirmEliminarPago(p)}>Eliminar</Button>
                           </td>

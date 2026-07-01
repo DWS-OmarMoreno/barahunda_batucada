@@ -23,7 +23,7 @@ async function login(req, res, next) {
       return fail(res, { message: 'Credenciales inválidas', status: 401 });
     }
 
-    const payload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol };
+    const payload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, miembro_id: usuario.miembro_id || null };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
 
     await registrarAccion({

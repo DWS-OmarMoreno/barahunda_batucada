@@ -29,5 +29,8 @@ router.post('/:id/pagos', uploadSoporte.single('soporte'), controller.registrarP
 
 router.get('/:id/auditoria', controller.auditoria);
 router.get('/:id/whatsapp-recordatorio', controller.whatsappRecordatorio);
+router.post('/:id/generar-correo', controller.generarCorreo);
+router.post('/:id/conceder-acceso', controller.concederAcceso);
+router.post('/:id/remover-acceso', controller.removerAcceso);
 
 module.exports = router;

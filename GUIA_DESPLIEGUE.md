@@ -215,14 +215,22 @@ en la sección 5, una vez subido el código.
 ## 5. Subir el código al servidor
 
 Lo más simple es usar Git (si tienes el código en un repositorio privado en GitHub/
-GitLab) o `scp` para copiar la carpeta directamente:
+GitLab) o `scp` para copiar la carpeta directamente. Antes de cualquiera de las dos
+opciones, asegúrate de que la carpeta destino exista y sea tuya (evita el error
+`Permission denied` si `/home/barahunda` todavía no existe o no te pertenece):
+
+```bash
+sudo mkdir -p /home/barahunda/app
+sudo chown -R barahunda:barahunda /home/barahunda/app
+```
 
 ```bash
 # Opción A: con git (recomendado, facilita actualizaciones futuras)
-git clone TU_REPOSITORIO.git /home/barahunda/app
+cd /home/barahunda/app
+git clone TU_REPOSITORIO.git .
 
 # Opción B: copiar desde tu computador (PowerShell, en TU máquina, no en el VPS)
-scp -r .\app barahunda@TU_IP_DEL_SERVIDOR:/home/barahunda/app
+scp -r .\app\* barahunda@TU_IP_DEL_SERVIDOR:/home/barahunda/app
 ```
 
 ## 6. Configurar las variables de entorno de producción
@@ -251,6 +259,13 @@ ASISTENCIA_TOKEN_SECRET=GENERA_OTRO_NUEVO_AQUI
 # Tu dominio real, con https
 FRONTEND_URL=https://tuescuela.com
 ```
+
+> **¿Todavía no tienes dominio?** Usa [nip.io](https://nip.io/), un servicio gratis
+> que convierte tu IP pública en un dominio real (ej. `203.0.113.1.nip.io` si tu IP es
+> `203.0.113.1`). Como es un dominio de verdad, en la sección 10 sí podrás sacarle un
+> certificado Let's Encrypt normal — algo que no es posible apuntando solo a la IP.
+> Cuando compres tu dominio definitivo, cambia esta variable y vuelve a correr certbot
+> con el dominio nuevo.
 
 Genera los secretos así (ejecuta dos veces, uno para cada variable):
 
@@ -310,6 +325,13 @@ Crea el archivo de configuración del sitio:
 ```bash
 sudo nano /etc/nginx/sites-available/barahunda
 ```
+
+Cambia `tuescuela.com www.tuescuela.com` por tu dominio real. **Si todavía no tienes
+dominio y estás usando nip.io (sección 6), pon aquí ese mismo hostname** (ej.
+`server_name 203.0.113.1.nip.io;`, sin `www`, ya que ese subdominio no aplica con
+nip.io) — si lo dejas con el valor de ejemplo, Nginx no reconocerá las peticiones a tu
+IP/nip.io y caerás en la página por defecto de Nginx ("Welcome to nginx!") en vez de tu
+app:
 
 ```nginx
 server {

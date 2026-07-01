@@ -29,3 +29,8 @@ export async function obtenerQrHorario(id) {
   const { data } = await api.get(`/horarios/${id}/qr`);
   return data;
 }
+
+export async function eliminarHorario(id) {
+  const { data } = await api.delete(`/horarios/${id}`);
+  return data;
+}

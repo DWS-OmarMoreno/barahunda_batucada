@@ -121,3 +121,15 @@
   padding: 6px 8px;
   border-bottom: 1px solid var(--color-border);
 }
+
+.mensualidades__soporte-link {
+  color: var(--color-primary);
+  font-size: 13px;
+  text-decoration: none;
+}
+.mensualidades__soporte-link:hover { text-decoration: underline; }
+
+.mensualidades__soporte-vacio {
+  color: var(--color-secondary);
+  font-size: 13px;
+}

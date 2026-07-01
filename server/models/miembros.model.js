@@ -1,7 +1,9 @@
 const { pool } = require('../config/db');
+const { generarCorreo } = require('../utils/correoInstitucional');
 
 const CAMPOS = [
   'nombres_completos', 'tipo_documento', 'numero_documento', 'whatsapp', 'email',
+  'correo_institucional',
   'fecha_nacimiento', 'direccion', 'tipo_sangre', 'eps',
   'padece_enfermedad', 'enfermedad_cual', 'sufre_alergia', 'alergia_cual',
   'toma_medicamentos', 'medicamentos_cuales', 'restricciones_fisicas',
@@ -51,7 +53,17 @@ async function listar({ busqueda = '', activo, nivelId, limite, offset }) {
 }
 
 async function obtenerPorId(id) {
-  const [rows] = await pool.query('SELECT * FROM miembros WHERE id = ?', [id]);
+  const [rows] = await pool.query(
+    `SELECT m.*,
+       u.id AS usuario_id,
+       u.email AS usuario_email,
+       u.activo AS usuario_activo
+     FROM miembros m
+     LEFT JOIN usuarios u ON u.miembro_id = m.id
+     WHERE m.id = ?
+     LIMIT 1`,
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -60,7 +72,12 @@ async function obtenerPorDocumento(numeroDocumento) {
   return rows[0] || null;
 }
 
-async function crear(datos) {
+async function crear(datos, dominio = null) {
+  // Auto-generar correo institucional si el dominio está configurado y no se proporcionó uno
+  if (!datos.correo_institucional && dominio && datos.nombres_completos) {
+    datos = { ...datos, correo_institucional: generarCorreo(datos.nombres_completos, dominio) };
+  }
+
   const campos = CAMPOS.filter((c) => Object.prototype.hasOwnProperty.call(datos, c));
   const columnas = campos.join(', ');
   const marcadores = campos.map(() => '?').join(', ');
@@ -68,6 +85,20 @@ async function crear(datos) {
 
   const [resultado] = await pool.query(`INSERT INTO miembros (${columnas}) VALUES (${marcadores})`, valores);
   return obtenerPorId(resultado.insertId);
+}
+
+// Genera y guarda el correo institucional para un miembro que no lo tiene.
+async function asignarCorreoInstitucional(id, dominio) {
+  const miembro = await obtenerPorId(id);
+  if (!miembro) throw Object.assign(new Error('Miembro no encontrado'), { status: 404 });
+  if (miembro.correo_institucional) {
+    throw Object.assign(new Error('Este miembro ya tiene correo institucional asignado'), { status: 400 });
+  }
+  const correo = generarCorreo(miembro.nombres_completos, dominio);
+  if (!correo) throw Object.assign(new Error('No se pudo generar el correo institucional'), { status: 400 });
+
+  await pool.query('UPDATE miembros SET correo_institucional = ? WHERE id = ?', [correo, id]);
+  return obtenerPorId(id);
 }
 
 async function actualizar(id, datos) {
@@ -94,4 +125,4 @@ async function cambiarActivo(id, activo) {
   return { anterior: actual, nuevo };
 }
 
-module.exports = { CAMPOS, listar, obtenerPorId, obtenerPorDocumento, crear, actualizar, cambiarActivo };
+module.exports = { CAMPOS, listar, obtenerPorId, obtenerPorDocumento, crear, actualizar, cambiarActivo, asignarCorreoInstitucional };

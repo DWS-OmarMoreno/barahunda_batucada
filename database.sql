@@ -413,26 +413,3 @@ INSERT INTO plantillas_whatsapp (nombre, contenido) VALUES
   ('Invitación a evento', 'Hola {nombre}, te invitamos a participar en nuestro próximo evento el {fecha_evento}. ¡Te esperamos!');
 
 -- Nota: el tipo de documento (CC, TI, CE, Pasaporte) se maneja como ENUM en la tabla `miembros`.
-
--- =====================================================================
--- MIGRACIÓN: aplicar sobre una base de datos ya existente (creada antes
--- de añadir estas columnas). En una instalación nueva, `database.sql`
--- ya crea las tablas con estas columnas incluidas, así que este bloque
--- es un no-op (cada ADD COLUMN/CONSTRAINT usa IF NOT EXISTS).
--- =====================================================================
-ALTER TABLE miembros
-  ADD COLUMN IF NOT EXISTS exento_pago TINYINT(1) NOT NULL DEFAULT 0 AFTER restricciones_fisicas,
-  ADD COLUMN IF NOT EXISTS asistencia_obligatoria TINYINT(1) NOT NULL DEFAULT 0 AFTER exento_pago;
-
-ALTER TABLE asistencias
-  ADD COLUMN IF NOT EXISTS motivo_anulacion VARCHAR(255) NULL AFTER minutos_retraso,
-  ADD COLUMN IF NOT EXISTS anulado_por INT NULL AFTER motivo_anulacion,
-  ADD COLUMN IF NOT EXISTS fecha_anulacion DATETIME NULL AFTER anulado_por;
-
--- Fecha de "Go Live": fecha a partir de la cual el sistema calcula
--- ausencias (filas sintéticas AUSENTE en reportes y en el listado admin
--- de Asistencias). Antes de esta fecha la escuela no usaba el sistema,
--- así que no deben generarse ausencias previas a ella. NULL = sin límite
--- (comportamiento anterior, usa solo la ventana de días por defecto).
-ALTER TABLE configuracion
-  ADD COLUMN IF NOT EXISTS fecha_go_live DATE NULL AFTER escuela_direccion;

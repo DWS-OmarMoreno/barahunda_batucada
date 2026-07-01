@@ -15,9 +15,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  // Si ya hay una sesión activa, redirige automáticamente al panel
+  // Si ya hay una sesión activa, redirige automáticamente según el rol
   if (!cargandoSesion && isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={usuario?.rol === 'MIEMBRO' ? '/portal' : '/'} replace />;
   }
 
   function actualizarCampo(e) {
@@ -35,8 +35,9 @@ export default function Login() {
 
     setEnviando(true);
     try {
-      await login(form.email, form.password);
-      navigate('/', { replace: true });
+      const respuesta = await login(form.email, form.password);
+      const { usuario: u } = respuesta.data;
+      navigate(u?.rol === 'MIEMBRO' ? '/portal' : '/', { replace: true });
     } catch (err) {
       const mensaje = err.response?.data?.message || 'No se pudo iniciar sesión. Intenta de nuevo.';
       setError(mensaje);

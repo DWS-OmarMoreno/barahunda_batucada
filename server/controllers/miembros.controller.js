@@ -9,6 +9,8 @@ const miembroNivelesModel = require('../models/miembroNiveles.model');
 const contactosModel = require('../models/contactos.model');
 const pagosModel = require('../models/pagos.model');
 const mensualidadModel = require('../models/mensualidad.model');
+const configuracionModel = require('../models/configuracion.model');
+const usuarioModel = require('../models/usuario.model');
 
 const MODULO = 'MIEMBROS';
 
@@ -84,7 +86,10 @@ async function crear(req, res, next) {
       return fail(res, { message: 'Ya existe un miembro con ese número de documento', status: 409 });
     }
 
-    const miembro = await miembrosModel.crear(req.body);
+    // Obtener dominio configurado para auto-generar correo institucional
+    const config = await configuracionModel.obtener();
+    const dominio = config?.dominio || null;
+    const miembro = await miembrosModel.crear(req.body, dominio);
 
     if (req.auditoria) {
       await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'CREATE', entidadId: miembro.id, detalle: miembro });
@@ -355,6 +360,79 @@ async function whatsappRecordatorio(req, res, next) {
   }
 }
 
+// POST /api/miembros/:id/generar-correo — genera correo institucional si no tiene
+async function generarCorreo(req, res, next) {
+  try {
+    const config = await configuracionModel.obtener();
+    const dominio = config?.dominio;
+    if (!dominio) {
+      return fail(res, { message: 'Configura el dominio en Configuración antes de generar correos institucionales', status: 400 });
+    }
+    const miembro = await miembrosModel.asignarCorreoInstitucional(req.params.id, dominio);
+
+    if (req.auditoria) {
+      await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'UPDATE', entidadId: miembro.id, detalle: { correo_institucional: miembro.correo_institucional } });
+    }
+
+    return ok(res, { data: miembro, message: 'Correo institucional generado correctamente' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/miembros/:id/conceder-acceso
+// Crea o reactiva la cuenta de portal del miembro. La contraseña temporal es su número de documento.
+async function concederAcceso(req, res, next) {
+  try {
+    const miembro = await miembrosModel.obtenerPorId(req.params.id);
+    if (!miembro) return fail(res, { message: 'Miembro no encontrado', status: 404 });
+
+    const emailAcceso = miembro.correo_institucional || miembro.email;
+    if (!emailAcceso) {
+      return fail(res, { message: 'El miembro no tiene correo institucional ni personal. Genera un correo primero.', status: 400 });
+    }
+    if (!miembro.numero_documento) {
+      return fail(res, { message: 'El miembro no tiene número de documento registrado.', status: 400 });
+    }
+
+    const usuario = await usuarioModel.concederAcceso({
+      miembroId: miembro.id,
+      nombre: miembro.nombres_completos,
+      email: emailAcceso,
+      password: miembro.numero_documento,
+    });
+
+    if (req.auditoria) {
+      await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'UPDATE', entidadId: miembro.id, detalle: { acceso_portal: 'concedido', email: emailAcceso } });
+    }
+
+    return ok(res, {
+      data: { usuario_id: usuario.id, email: emailAcceso, password_temporal: miembro.numero_documento },
+      message: 'Acceso al portal concedido. La contraseña temporal es el número de documento del miembro.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/miembros/:id/remover-acceso
+async function removerAcceso(req, res, next) {
+  try {
+    const miembro = await miembrosModel.obtenerPorId(req.params.id);
+    if (!miembro) return fail(res, { message: 'Miembro no encontrado', status: 404 });
+
+    await usuarioModel.removerAcceso(miembro.id);
+
+    if (req.auditoria) {
+      await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'UPDATE', entidadId: miembro.id, detalle: { acceso_portal: 'removido' } });
+    }
+
+    return ok(res, { message: 'Acceso al portal removido correctamente.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listar,
   obtener,
@@ -373,4 +451,7 @@ module.exports = {
   registrarPago,
   auditoria,
   whatsappRecordatorio,
+  generarCorreo,
+  concederAcceso,
+  removerAcceso,
 };

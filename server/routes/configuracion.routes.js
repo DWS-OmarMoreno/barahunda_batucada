@@ -13,5 +13,6 @@ router.get('/', controller.obtener);
 router.put('/', verifyToken, auditoriaMiddleware, controller.actualizar);
 router.post('/logo', verifyToken, uploadLogo.single('logo'), controller.subirLogo);
 router.get('/auditoria', verifyToken, controller.obtenerAuditoria);
+router.post('/smtp/test', verifyToken, controller.probarSmtp);
 
 module.exports = router;

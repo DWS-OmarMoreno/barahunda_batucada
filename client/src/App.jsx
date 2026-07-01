@@ -19,6 +19,13 @@ import Comunicaciones from './pages/Comunicaciones/Comunicaciones';
 import Reportes from './pages/Reportes/Reportes';
 import ImportacionExportacion from './pages/ImportacionExportacion/ImportacionExportacion';
 import Usuarios from './pages/Usuarios/Usuarios';
+import Escuela from './pages/Escuela/Escuela';
+import PlantillasCorreo from './pages/PlantillasCorreo/PlantillasCorreo';
+import PortalLayout from './pages/Portal/PortalLayout';
+import PortalInicio from './pages/Portal/PortalInicio';
+import MisAsistencias from './pages/Portal/MisAsistencias';
+import MisMensualidades from './pages/Portal/MisMensualidades';
+import MisTareas from './pages/Portal/MisTareas';
 
 function App() {
   return (
@@ -51,8 +58,25 @@ function App() {
               <Route path="comunicaciones" element={<Comunicaciones />} />
               <Route path="reportes" element={<Reportes />} />
               <Route path="importacion-exportacion" element={<ImportacionExportacion />} />
+              <Route path="escuela" element={<Escuela />} />
               <Route path="configuracion" element={<Configuracion />} />
               <Route path="usuarios" element={<Usuarios />} />
+              <Route path="plantillas-correo" element={<PlantillasCorreo />} />
+            </Route>
+
+            {/* Portal del miembro — layout y guard propios */}
+            <Route
+              path="/portal"
+              element={
+                <PrivateRoute>
+                  <PortalLayout />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<PortalInicio />} />
+              <Route path="asistencias" element={<MisAsistencias />} />
+              <Route path="mensualidades" element={<MisMensualidades />} />
+              <Route path="tareas" element={<MisTareas />} />
             </Route>
           </Routes>
         </AuthProvider>

@@ -12,6 +12,7 @@ router.get('/:id', controller.obtener);
 router.post('/', controller.crear);
 router.put('/:id', controller.actualizar);
 router.patch('/:id/toggle', controller.toggle);
+router.delete('/:id', controller.eliminar);
 router.get('/:id/qr', controller.qr);
 router.get('/:id/auditoria', controller.auditoria);
 

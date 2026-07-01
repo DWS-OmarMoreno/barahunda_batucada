@@ -9,6 +9,7 @@ import {
   obtenerAuditoriaUsuario,
 } from '../../services/usuarios.service';
 import { useAuth } from '../../context/AuthContext';
+import { listarMiembros } from '../../services/miembros.service';
 import { formatearFechaHora } from '../../utils/formato';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -20,7 +21,7 @@ import SubList from '../../components/ui/SubList';
 import AuditLog from '../../components/ui/AuditLog';
 import './Usuarios.css';
 
-const FORM_VACIO = { nombre: '', email: '', password: '', confirmarPassword: '' };
+const FORM_VACIO = { nombre: '', email: '', password: '', confirmarPassword: '', rol: 'ADMIN', miembro_id: '' };
 const FORM_PASSWORD_VACIO = { password: '', confirmarPassword: '' };
 
 export default function Usuarios() {
@@ -47,6 +48,8 @@ export default function Usuarios() {
   const [errorActivo, setErrorActivo] = useState('');
   const [cambiandoActivo, setCambiandoActivo] = useState(false);
 
+  const [miembros, setMiembros] = useState([]);
+
   const [detalle, setDetalle] = useState(null);
   const [auditoria, setAuditoria] = useState([]);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
@@ -64,9 +67,13 @@ export default function Usuarios() {
     }
   }, [busqueda, pagina]);
 
+  useEffect(() => { cargar(); }, [cargar]);
+
   useEffect(() => {
-    cargar();
-  }, [cargar]);
+    listarMiembros({ activo: '1', limit: 500 })
+      .then((r) => setMiembros(r.data))
+      .catch(() => setMiembros([]));
+  }, []);
 
   function abrirCrear() {
     setEditando(null);
@@ -77,7 +84,7 @@ export default function Usuarios() {
 
   function abrirEditar(usuario) {
     setEditando(usuario);
-    setForm({ nombre: usuario.nombre, email: usuario.email, password: '', confirmarPassword: '' });
+    setForm({ nombre: usuario.nombre, email: usuario.email, password: '', confirmarPassword: '', rol: usuario.rol || 'ADMIN', miembro_id: usuario.miembro_id || '' });
     setError('');
     setModalAbierto(true);
   }
@@ -94,14 +101,14 @@ export default function Usuarios() {
     setGuardando(true);
     try {
       if (editando) {
-        await actualizarUsuario(editando.id, { nombre: form.nombre, email: form.email });
+        await actualizarUsuario(editando.id, { nombre: form.nombre, email: form.email, miembro_id: form.miembro_id || null });
       } else {
-        await crearUsuario({ nombre: form.nombre, email: form.email, password: form.password });
+        await crearUsuario({ nombre: form.nombre, email: form.email, password: form.password, rol: form.rol, miembro_id: form.miembro_id || null });
       }
       setModalAbierto(false);
       cargar();
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo guardar el administrador');
+      setError(err.response?.data?.message || 'No se pudo guardar el usuario');
     } finally {
       setGuardando(false);
     }
@@ -206,7 +213,7 @@ export default function Usuarios() {
 
       <Modal
         abierto={modalAbierto}
-        titulo={editando ? 'Editar administrador' : 'Nuevo administrador'}
+        titulo={editando ? 'Editar usuario' : 'Nuevo usuario'}
         onClose={() => setModalAbierto(false)}
         footer={
           <>
@@ -231,6 +238,30 @@ export default function Usuarios() {
             onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
             required
           />
+          {!editando && (
+            <FormField
+              label="Rol"
+              type="select"
+              name="rol"
+              value={form.rol}
+              onChange={(e) => setForm((p) => ({ ...p, rol: e.target.value, miembro_id: '' }))}
+              options={[
+                { value: 'ADMIN', label: 'Administrador' },
+                { value: 'MIEMBRO', label: 'Miembro (acceso al portal)' },
+              ]}
+            />
+          )}
+          {form.rol === 'MIEMBRO' && (
+            <FormField
+              label="Miembro vinculado"
+              type="select"
+              name="miembro_id"
+              value={form.miembro_id}
+              onChange={(e) => setForm((p) => ({ ...p, miembro_id: e.target.value }))}
+              options={[{ value: '', label: 'Selecciona un miembro...' }, ...miembros.map((m) => ({ value: m.id, label: m.nombres_completos }))]}
+              helpText="Este usuario iniciará sesión con su correo institucional o personal."
+            />
+          )}
           {!editando && (
             <>
               <FormField

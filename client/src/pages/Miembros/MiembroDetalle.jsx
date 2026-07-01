@@ -10,6 +10,9 @@ import {
   listarPagosMiembro,
   registrarPagoMiembro,
   obtenerAuditoriaMiembro,
+  generarCorreoMiembro,
+  concederAccesoPortal,
+  removerAccesoPortal,
 } from '../../services/miembros.service';
 import { listarNiveles } from '../../services/niveles.service';
 import { listarInstrumentos } from '../../services/instrumentos.service';
@@ -64,6 +67,13 @@ export default function MiembroDetalle({ miembroId, onClose, onCambio }) {
   const [archivoSoporte, setArchivoSoporte] = useState(null);
   const [guardandoPago, setGuardandoPago] = useState(false);
 
+  const [generandoCorreo, setGenerandoCorreo] = useState(false);
+  const [errorCorreo, setErrorCorreo] = useState('');
+
+  const [accesoAccion, setAccesoAccion] = useState(null); // 'conceder' | 'remover'
+  const [accesoMensaje, setAccesoMensaje] = useState('');
+  const [gestionandoAcceso, setGestionandoAcceso] = useState(false);
+
   const [error, setError] = useState('');
   const [guardandoSub, setGuardandoSub] = useState(false);
 
@@ -112,6 +122,46 @@ export default function MiembroDetalle({ miembroId, onClose, onCambio }) {
     cargarMiembro();
     cargarAuditoria();
     onCambio?.();
+  }
+
+  // ---------- Acceso al portal ----------
+
+  async function handleAccesoPortal(accion) {
+    setGestionandoAcceso(true);
+    setAccesoMensaje('');
+    try {
+      if (accion === 'conceder') {
+        const respuesta = await concederAccesoPortal(miembroId);
+        setAccesoMensaje(`Acceso concedido. Email: ${respuesta.data.email} · Contraseña temporal: ${respuesta.data.password_temporal}`);
+      } else {
+        await removerAccesoPortal(miembroId);
+        setAccesoMensaje('Acceso al portal removido.');
+      }
+      cargarMiembro();
+      onCambio?.();
+    } catch (err) {
+      setAccesoMensaje(err.response?.data?.message || 'No se pudo procesar la solicitud');
+    } finally {
+      setGestionandoAcceso(false);
+      setAccesoAccion(null);
+    }
+  }
+
+  // ---------- Correo institucional ----------
+
+  async function handleGenerarCorreo() {
+    setGenerandoCorreo(true);
+    setErrorCorreo('');
+    try {
+      const respuesta = await generarCorreoMiembro(miembroId);
+      // Actualizar el miembro en estado local para reflejar el correo generado
+      setMiembro((m) => ({ ...m, correo_institucional: respuesta.data?.correo_institucional }));
+      onCambio?.();
+    } catch (err) {
+      setErrorCorreo(err.response?.data?.message || 'No se pudo generar el correo institucional');
+    } finally {
+      setGenerandoCorreo(false);
+    }
   }
 
   // ---------- Niveles ----------
@@ -253,6 +303,32 @@ export default function MiembroDetalle({ miembroId, onClose, onCambio }) {
               <div><span>Documento</span><strong>{miembro.tipo_documento} {miembro.numero_documento}</strong></div>
               <div><span>WhatsApp</span><strong>{miembro.whatsapp || '—'}</strong></div>
               <div><span>Email</span><strong>{miembro.email || '—'}</strong></div>
+              <div>
+                <span>Correo institucional</span>
+                <strong>
+                  {miembro.correo_institucional ? (
+                    miembro.correo_institucional
+                  ) : (
+                    <span className="miembro-detalle__correo-vacio">
+                      <em style={{ color: 'var(--color-secondary)', fontStyle: 'normal' }}>Sin asignar</em>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleGenerarCorreo}
+                        loading={generandoCorreo}
+                        style={{ marginLeft: '10px', padding: '2px 10px', fontSize: '12px' }}
+                      >
+                        Generar correo
+                      </Button>
+                    </span>
+                  )}
+                </strong>
+                {errorCorreo && (
+                  <span style={{ display: 'block', fontSize: '12px', color: 'var(--color-danger)', marginTop: '4px' }}>
+                    {errorCorreo}
+                  </span>
+                )}
+              </div>
               <div><span>Fecha de nacimiento</span><strong>{formatearFecha(miembro.fecha_nacimiento)}</strong></div>
               <div><span>Dirección</span><strong>{miembro.direccion || '—'}</strong></div>
               <div><span>Estado</span><strong>{miembro.activo ? 'Activo' : 'Inactivo'}</strong></div>
@@ -275,8 +351,72 @@ export default function MiembroDetalle({ miembroId, onClose, onCambio }) {
                   )}
                 </strong>
               </div>
+
+              {/* Acceso al portal */}
+              <div className="miembro-detalle__acceso">
+                <span>Acceso al portal</span>
+                <div className="miembro-detalle__acceso-body">
+                  {miembro.usuario_id ? (
+                    <>
+                      <StatusBadge
+                        texto={miembro.usuario_activo ? 'Activo' : 'Inactivo'}
+                        variant={miembro.usuario_activo ? 'success' : 'secondary'}
+                      />
+                      <span className="miembro-detalle__acceso-email">{miembro.usuario_email}</span>
+                      {miembro.usuario_activo ? (
+                        <Button
+                          variant="danger"
+                          onClick={() => setAccesoAccion('remover')}
+                          loading={gestionandoAcceso}
+                          style={{ padding: '2px 10px', fontSize: '12px' }}
+                        >
+                          Remover acceso
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setAccesoAccion('conceder')}
+                          loading={gestionandoAcceso}
+                          style={{ padding: '2px 10px', fontSize: '12px' }}
+                        >
+                          Reactivar acceso
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <StatusBadge texto="Sin acceso" variant="secondary" />
+                      <Button
+                        variant="secondary"
+                        onClick={() => setAccesoAccion('conceder')}
+                        loading={gestionandoAcceso}
+                        style={{ marginLeft: '8px', padding: '2px 10px', fontSize: '12px' }}
+                      >
+                        Conceder acceso
+                      </Button>
+                    </>
+                  )}
+                </div>
+                {accesoMensaje && (
+                  <p className="miembro-detalle__acceso-msg">{accesoMensaje}</p>
+                )}
+              </div>
             </div>
           )}
+
+          <ConfirmDialog
+            abierto={!!accesoAccion}
+            titulo={accesoAccion === 'conceder' ? 'Conceder acceso al portal' : 'Remover acceso al portal'}
+            mensaje={
+              accesoAccion === 'conceder'
+                ? `Se creará una cuenta para ${miembro?.nombres_completos} con correo institucional o personal y contraseña temporal igual a su número de cédula.`
+                : `${miembro?.nombres_completos} perderá acceso al portal de miembros.`
+            }
+            onConfirmar={() => handleAccesoPortal(accesoAccion)}
+            onCancelar={() => setAccesoAccion(null)}
+            textoConfirmar={accesoAccion === 'conceder' ? 'Conceder' : 'Remover'}
+            cargando={gestionandoAcceso}
+          />
 
           {pestana === 'medica' && (
             <div className="miembro-detalle__campos">

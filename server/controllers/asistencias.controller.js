@@ -355,6 +355,41 @@ async function anular(req, res, next) {
   }
 }
 
+// PATCH /api/asistencias/:id — edición manual por admin (estado y/o hora)
+async function editar(req, res, next) {
+  try {
+    const { estado, hora, motivo } = req.body || {};
+    const estadosValidos = ['A_TIEMPO', 'TARDE', 'AUSENTE'];
+    if (estado && !estadosValidos.includes(estado)) {
+      return fail(res, { message: 'Estado no válido. Opciones: A_TIEMPO, TARDE, AUSENTE', status: 400 });
+    }
+    if (!estado && !hora) {
+      return fail(res, { message: 'Debes indicar al menos el estado o la hora a modificar', status: 400 });
+    }
+
+    const { anterior, nuevo } = await asistenciasModel.editar(
+      req.params.id,
+      { estado, hora, motivo },
+      req.usuario?.id
+    );
+
+    if (req.auditoria) {
+      await req.auditoria.registrarCambios({ modulo: MODULO, entidadId: nuevo.id, anterior, nuevo });
+      // Registro adicional que indica que fue modificación manual
+      await req.auditoria.registrarAccion({
+        modulo: MODULO,
+        accion: 'UPDATE',
+        entidadId: nuevo.id,
+        detalle: { tipo: 'MODIFICACION_MANUAL', motivo, estado_anterior: anterior.estado, estado_nuevo: nuevo.estado },
+      });
+    }
+
+    return ok(res, { data: nuevo, message: 'Asistencia modificada manualmente' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function auditoria(req, res, next) {
   try {
     const [rows] = await pool.query(
@@ -372,4 +407,4 @@ async function auditoria(req, res, next) {
   }
 }
 
-module.exports = { listar, obtener, contadores, reporte, conAusentes, registrarPublica, registrarPuntoFijo, anular, auditoria };
+module.exports = { listar, obtener, contadores, reporte, conAusentes, registrarPublica, registrarPuntoFijo, anular, editar, auditoria };

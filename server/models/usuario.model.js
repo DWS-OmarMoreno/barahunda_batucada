@@ -3,7 +3,7 @@ const { pool } = require('../config/db');
 
 async function buscarPorEmail(email) {
   const [rows] = await pool.query(
-    'SELECT id, nombre, email, password_hash, rol, activo FROM usuarios WHERE email = ? LIMIT 1',
+    'SELECT id, nombre, email, password_hash, rol, miembro_id, activo FROM usuarios WHERE email = ? LIMIT 1',
     [email]
   );
   return rows[0] || null;
@@ -11,7 +11,7 @@ async function buscarPorEmail(email) {
 
 async function buscarPorId(id) {
   const [rows] = await pool.query(
-    'SELECT id, nombre, email, rol, activo, created_at, updated_at FROM usuarios WHERE id = ? LIMIT 1',
+    'SELECT id, nombre, email, rol, miembro_id, activo, created_at, updated_at FROM usuarios WHERE id = ? LIMIT 1',
     [id]
   );
   return rows[0] || null;
@@ -72,25 +72,26 @@ async function contarActivos(excluirId) {
   return Number(total);
 }
 
-async function crear({ nombre, email, password, rol }) {
+async function crear({ nombre, email, password, rol, miembro_id }) {
   const password_hash = await bcrypt.hash(password, 10);
   const [resultado] = await pool.query(
-    'INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (?, ?, ?, ?)',
-    [nombre, email, password_hash, rol || 'ADMIN']
+    'INSERT INTO usuarios (nombre, email, password_hash, rol, miembro_id) VALUES (?, ?, ?, ?, ?)',
+    [nombre, email, password_hash, rol || 'ADMIN', miembro_id || null]
   );
   return buscarPorId(resultado.insertId);
 }
 
-async function actualizar(id, { nombre, email, rol }) {
+async function actualizar(id, { nombre, email, rol, miembro_id }) {
   const actual = await buscarPorId(id);
-  if (!actual) throw Object.assign(new Error('Administrador no encontrado'), { status: 404 });
+  if (!actual) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
 
   await pool.query(
-    'UPDATE usuarios SET nombre = ?, email = ?, rol = ? WHERE id = ?',
+    'UPDATE usuarios SET nombre = ?, email = ?, rol = ?, miembro_id = ? WHERE id = ?',
     [
       nombre !== undefined ? nombre : actual.nombre,
       email !== undefined ? email : actual.email,
       rol !== undefined ? rol : actual.rol,
+      miembro_id !== undefined ? (miembro_id || null) : actual.miembro_id,
       id,
     ]
   );
@@ -116,13 +117,51 @@ async function cambiarActivo(id, activo) {
   return { anterior: actual, nuevo };
 }
 
+async function buscarPorMiembroId(miembroId) {
+  const [rows] = await pool.query(
+    'SELECT id, nombre, email, rol, miembro_id, activo FROM usuarios WHERE miembro_id = ? LIMIT 1',
+    [miembroId]
+  );
+  return rows[0] || null;
+}
+
+async function concederAcceso({ miembroId, nombre, email, password }) {
+  const existente = await buscarPorMiembroId(miembroId);
+  if (existente) {
+    // Reactivar y resetear contraseña
+    const password_hash = await bcrypt.hash(password, 10);
+    await pool.query(
+      'UPDATE usuarios SET activo = 1, password_hash = ? WHERE id = ?',
+      [password_hash, existente.id]
+    );
+    return buscarPorId(existente.id);
+  }
+  // Crear nueva cuenta
+  const password_hash = await bcrypt.hash(password, 10);
+  const [resultado] = await pool.query(
+    'INSERT INTO usuarios (nombre, email, password_hash, rol, miembro_id) VALUES (?, ?, ?, ?, ?)',
+    [nombre, email, password_hash, 'MIEMBRO', miembroId]
+  );
+  return buscarPorId(resultado.insertId);
+}
+
+async function removerAcceso(miembroId) {
+  const existente = await buscarPorMiembroId(miembroId);
+  if (!existente) throw Object.assign(new Error('Este miembro no tiene acceso al portal'), { status: 404 });
+  await pool.query('UPDATE usuarios SET activo = 0 WHERE id = ?', [existente.id]);
+  return buscarPorId(existente.id);
+}
+
 module.exports = {
   buscarPorEmail,
   buscarPorId,
+  buscarPorMiembroId,
   listar,
   contarActivos,
   crear,
   actualizar,
   cambiarPassword,
   cambiarActivo,
+  concederAcceso,
+  removerAcceso,
 };

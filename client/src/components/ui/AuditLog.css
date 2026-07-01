@@ -36,3 +36,31 @@
   font-size: 13px;
   padding: 12px 0;
 }
+
+.audit-log__paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.audit-log__pag-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.audit-log__pag-btn:disabled { opacity: 0.4; cursor: default; }
+.audit-log__pag-btn:not(:disabled):hover { background: var(--color-background); }
+
+.audit-log__pag-info {
+  font-size: 13px;
+  color: var(--color-text);
+}
+.audit-log__pag-total { color: var(--color-secondary); }

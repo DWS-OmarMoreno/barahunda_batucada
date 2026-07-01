@@ -133,6 +133,27 @@
   border-radius: 10px;
 }
 
+.layout__seccion {
+  display: flex;
+  flex-direction: column;
+}
+
+.layout__seccion + .layout__seccion {
+  border-top: 1px solid var(--color-border);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.layout__seccion-titulo {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-secondary);
+  padding: 10px 18px 4px;
+  margin: 0;
+}
+
 .layout__contenido {
   flex: 1;
   padding: 16px;

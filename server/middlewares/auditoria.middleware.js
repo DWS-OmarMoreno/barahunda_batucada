@@ -6,12 +6,13 @@ const { registrar, registrarCambios, registrarAccion } = require('../utils/audit
 
 function auditoriaMiddleware(req, res, next) {
   const usuarioId = req.usuario ? req.usuario.id : null;
+  const usuarioEmail = req.usuario ? req.usuario.email : null;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
 
   req.auditoria = {
-    registrar: (params) => registrar({ usuarioId, ip, ...params }),
-    registrarCambios: (params) => registrarCambios({ usuarioId, ip, ...params }),
-    registrarAccion: (params) => registrarAccion({ usuarioId, ip, ...params }),
+    registrar: (params) => registrar({ usuarioId, usuarioEmail, ip, ...params }),
+    registrarCambios: (params) => registrarCambios({ usuarioId, usuarioEmail, ip, ...params }),
+    registrarAccion: (params) => registrarAccion({ usuarioId, usuarioEmail, ip, ...params }),
   };
 
   next();

@@ -1,0 +1,208 @@
+.portal__seccion {
+  max-width: 800px;
+}
+
+.portal__seccion h1 {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.portal__nota {
+  color: var(--color-secondary);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.portal__cargando,
+.portal__vacio {
+  color: var(--color-secondary);
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.portal__error {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.portal__exito {
+  color: var(--color-success);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Inicio */
+.portal__inicio h1 { margin-bottom: 4px; }
+.portal__subtitulo { color: var(--color-secondary); font-size: 14px; margin-bottom: 24px; }
+
+.portal__perfil-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 600px;
+}
+
+.portal__perfil-card h2 {
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+
+.portal__perfil-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.portal__perfil-campos > div {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.portal__perfil-campos > div span {
+  color: var(--color-secondary);
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+/* Indicadores de asistencia */
+.portal__indicadores {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.portal__indicador {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  text-align: center;
+  min-width: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal__indicador span { font-size: 24px; font-weight: 700; }
+.portal__indicador small { font-size: 11px; color: var(--color-secondary); }
+
+.portal__indicador--success { border-color: var(--color-success); }
+.portal__indicador--success span { color: var(--color-success); }
+.portal__indicador--warning { border-color: var(--color-warning); }
+.portal__indicador--warning span { color: var(--color-warning); }
+.portal__indicador--danger { border-color: var(--color-danger); }
+.portal__indicador--danger span { color: var(--color-danger); }
+
+/* Filtros */
+.portal__filtros {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.portal__input {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+/* Tabla */
+.portal__tabla-wrapper {
+  overflow-x: auto;
+}
+
+.portal__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.portal__tabla th,
+.portal__tabla td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.portal__tabla th {
+  font-weight: 600;
+  background: var(--color-background);
+  font-size: 12px;
+}
+
+.portal__badge-manual {
+  font-size: 11px;
+  color: var(--color-secondary);
+  margin-left: 4px;
+}
+
+/* Tareas */
+.portal__tareas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.portal__tarea-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.portal__tarea-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.portal__tarea-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.portal__tarea-nivel {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.portal__tarea-desc {
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin-bottom: 12px;
+}
+
+.portal__tarea-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+}
+
+.portal__tarea-fecha {
+  font-size: 12px;
+  color: var(--color-secondary);
+  flex: 1;
+}
+
+.portal__tarea-feedback {
+  font-size: 12px;
+  color: var(--color-secondary);
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.portal__form { display: flex; flex-direction: column; gap: 14px; }

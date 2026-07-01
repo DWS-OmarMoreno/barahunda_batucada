@@ -24,6 +24,9 @@ const comunicacionesRoutes = require('./routes/comunicaciones.routes');
 const reportesRoutes = require('./routes/reportes.routes');
 const importacionRoutes = require('./routes/importacion.routes');
 const exportacionRoutes = require('./routes/exportacion.routes');
+const portalRoutes = require('./routes/portal.routes');
+const escuelaRoutes = require('./routes/escuela.routes');
+const correoRoutes = require('./routes/correo.routes');
 
 const app = express();
 
@@ -54,6 +57,9 @@ app.use('/api/comunicaciones', comunicacionesRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/importacion', importacionRoutes);
 app.use('/api/exportacion', exportacionRoutes);
+app.use('/api/portal', portalRoutes);
+app.use('/api/escuela', escuelaRoutes);
+app.use('/api/correo', correoRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

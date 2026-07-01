@@ -89,6 +89,13 @@ export async function registrarPagoMiembro(id, payload, archivoSoporte) {
   return data;
 }
 
+// ---------- Correo institucional ----------
+
+export async function generarCorreoMiembro(id) {
+  const { data } = await api.post(`/miembros/${id}/generar-correo`);
+  return data;
+}
+
 // ---------- Auditoría y WhatsApp ----------
 
 export async function obtenerAuditoriaMiembro(id) {
@@ -98,5 +105,15 @@ export async function obtenerAuditoriaMiembro(id) {
 
 export async function obtenerWhatsappRecordatorio(id) {
   const { data } = await api.get(`/miembros/${id}/whatsapp-recordatorio`);
+  return data;
+}
+
+export async function concederAccesoPortal(id) {
+  const { data } = await api.post(`/miembros/${id}/conceder-acceso`);
+  return data;
+}
+
+export async function removerAccesoPortal(id) {
+  const { data } = await api.post(`/miembros/${id}/remover-acceso`);
   return data;
 }

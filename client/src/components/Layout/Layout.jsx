@@ -4,23 +4,57 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import './Layout.css';
 
-// Mapa completo de los 12 módulos del sistema. `listo: true` indica que el
-// módulo ya está implementado en esta fase; el resto se muestra deshabilitado
-// como referencia de lo que viene en las siguientes fases del proyecto.
-const MODULOS = [
-  { ruta: '/', etiqueta: 'Dashboard', listo: true },
-  { ruta: '/miembros', etiqueta: 'Miembros', listo: true },
-  { ruta: '/niveles', etiqueta: 'Niveles', listo: true },
-  { ruta: '/horarios', etiqueta: 'Horarios', listo: true },
-  { ruta: '/asistencias', etiqueta: 'Asistencias', listo: true },
-  { ruta: '/mensualidades', etiqueta: 'Mensualidades', listo: true },
-  { ruta: '/multas', etiqueta: 'Multas', listo: true },
-  { ruta: '/eventos', etiqueta: 'Eventos', listo: true },
-  { ruta: '/comunicaciones', etiqueta: 'Comunicaciones', listo: true },
-  { ruta: '/reportes', etiqueta: 'Reportes', listo: true },
-  { ruta: '/importacion-exportacion', etiqueta: 'Importar / Exportar', listo: true },
-  { ruta: '/configuracion', etiqueta: 'Configuración', listo: true },
-  { ruta: '/usuarios', etiqueta: 'Administradores', listo: true },
+const SECCIONES = [
+  {
+    etiqueta: null, // Sin encabezado de sección
+    modulos: [
+      { ruta: '/', etiqueta: 'Dashboard' },
+    ],
+  },
+  {
+    etiqueta: 'Miembros',
+    modulos: [
+      { ruta: '/miembros', etiqueta: 'Miembros' },
+      { ruta: '/niveles', etiqueta: 'Niveles' },
+    ],
+  },
+  {
+    etiqueta: 'Operaciones',
+    modulos: [
+      { ruta: '/horarios', etiqueta: 'Horarios' },
+      { ruta: '/asistencias', etiqueta: 'Asistencias' },
+      { ruta: '/mensualidades', etiqueta: 'Mensualidades' },
+      { ruta: '/multas', etiqueta: 'Multas' },
+    ],
+  },
+  {
+    etiqueta: 'Escuela',
+    modulos: [
+      { ruta: '/escuela', etiqueta: 'Escuela' },
+    ],
+  },
+  {
+    etiqueta: 'Comunicaciones',
+    modulos: [
+      { ruta: '/eventos', etiqueta: 'Eventos' },
+      { ruta: '/comunicaciones', etiqueta: 'Comunicaciones' },
+    ],
+  },
+  {
+    etiqueta: 'Reportes',
+    modulos: [
+      { ruta: '/reportes', etiqueta: 'Reportes' },
+      { ruta: '/importacion-exportacion', etiqueta: 'Importar / Exportar' },
+    ],
+  },
+  {
+    etiqueta: 'Configuración',
+    modulos: [
+      { ruta: '/configuracion', etiqueta: 'Configuración' },
+      { ruta: '/usuarios', etiqueta: 'Administradores' },
+      { ruta: '/plantillas-correo', etiqueta: 'Plantillas de correo' },
+    ],
+  },
 ];
 
 export default function Layout() {
@@ -52,24 +86,24 @@ export default function Layout() {
 
       <div className="layout__cuerpo">
         <nav className={`layout__sidebar ${menuAbierto ? 'layout__sidebar--abierto' : ''}`}>
-          {MODULOS.map((m) =>
-            m.listo ? (
-              <NavLink
-                key={m.ruta}
-                to={m.ruta}
-                end={m.ruta === '/'}
-                className={({ isActive }) => `layout__nav-link ${isActive ? 'layout__nav-link--activo' : ''}`}
-                onClick={() => setMenuAbierto(false)}
-              >
-                {m.etiqueta}
-              </NavLink>
-            ) : (
-              <span key={m.ruta} className="layout__nav-link layout__nav-link--deshabilitado" title="Próximamente">
-                {m.etiqueta}
-                <small>pronto</small>
-              </span>
-            )
-          )}
+          {SECCIONES.map((seccion) => (
+            <div key={seccion.etiqueta || '__inicio'} className="layout__seccion">
+              {seccion.etiqueta && (
+                <p className="layout__seccion-titulo">{seccion.etiqueta}</p>
+              )}
+              {seccion.modulos.map((m) => (
+                <NavLink
+                  key={m.ruta}
+                  to={m.ruta}
+                  end={m.ruta === '/'}
+                  className={({ isActive }) => `layout__nav-link ${isActive ? 'layout__nav-link--activo' : ''}`}
+                  onClick={() => setMenuAbierto(false)}
+                >
+                  {m.etiqueta}
+                </NavLink>
+              ))}
+            </div>
+          ))}
         </nav>
 
         <main className="layout__contenido">
