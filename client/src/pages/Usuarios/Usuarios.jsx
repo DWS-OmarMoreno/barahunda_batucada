@@ -191,6 +191,7 @@ export default function Usuarios() {
         columnas={[
           { clave: 'nombre', titulo: 'Nombre' },
           { clave: 'email', titulo: 'Email' },
+          { clave: 'rol', titulo: 'Rol', render: (f) => <StatusBadge texto={f.rol === 'MIEMBRO' ? 'Miembro' : 'Administrador'} variant={f.rol === 'MIEMBRO' ? 'info' : 'secondary'} /> },
           { clave: 'created_at', titulo: 'Creado', render: (f) => formatearFechaHora(f.created_at) },
           { clave: 'activo', titulo: 'Estado', render: (f) => <StatusBadge texto={f.activo ? 'Activo' : 'Inactivo'} variant={f.activo ? 'success' : 'secondary'} /> },
         ]}
@@ -335,7 +336,7 @@ export default function Usuarios() {
 
       <Modal
         abierto={!!detalle}
-        titulo={`Administrador: ${detalle?.nombre || ''}`}
+        titulo={`${detalle?.rol === 'MIEMBRO' ? 'Miembro' : 'Administrador'}: ${detalle?.nombre || ''}`}
         onClose={() => setDetalle(null)}
         ancho="lg"
       >

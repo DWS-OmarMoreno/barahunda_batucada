@@ -40,7 +40,7 @@ async function enviarBienvenida(req, res, next) {
     const miembro = await miembrosModel.obtenerPorId(req.params.miembroId);
     if (!miembro) return fail(res, { message: 'Miembro no encontrado', status: 404 });
 
-    const emailDestino = miembro.correo_institucional || miembro.email;
+    const emailDestino = miembro.email;
     if (!emailDestino) return fail(res, { message: 'El miembro no tiene correo configurado', status: 400 });
 
     // Obtener nivel(es) del miembro
@@ -72,7 +72,7 @@ async function enviarTareaAsignada(req, res, next) {
     let enviados = 0;
     const errores = [];
     for (const m of miembros) {
-      const email = m.correo_institucional || m.email;
+      const email = m.email;
       if (!email) continue;
       try {
         await enviarConPlantilla('tarea_asignada', { email }, {
@@ -98,7 +98,7 @@ async function enviarTareaCalificada(req, res, next) {
     if (entrega.calificacion === null) return fail(res, { message: 'La entrega aún no tiene calificación', status: 400 });
 
     const miembro = await miembrosModel.obtenerPorId(entrega.miembro_id);
-    const email = miembro?.correo_institucional || miembro?.email;
+    const email = miembro?.email;
     if (!email) return fail(res, { message: 'El miembro no tiene correo configurado', status: 400 });
 
     await enviarConPlantilla('tarea_calificada', { email }, {
@@ -118,7 +118,7 @@ async function enviarRecordatorio(req, res, next) {
     if (!miembro) return fail(res, { message: 'Miembro no encontrado', status: 404 });
     if (miembro.exento_pago) return fail(res, { message: 'El miembro está exento de pago', status: 400 });
 
-    const email = miembro.correo_institucional || miembro.email;
+    const email = miembro.email;
     if (!email) return fail(res, { message: 'El miembro no tiene correo configurado', status: 400 });
 
     // Obtener mensualidad configurada

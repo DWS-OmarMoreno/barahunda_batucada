@@ -40,7 +40,7 @@ async function listarActivosConValor() {
 async function listarEstadoPorMes(mes, anio) {
   const [rows] = await pool.query(
     `SELECT m.id AS miembro_id, m.nombres_completos, m.numero_documento, m.whatsapp, m.exento_pago,
-            niv.nivel_id, niv.nivel_nombre,
+            niv.id AS nivel_id, niv.nombre AS nivel_nombre,
             COALESCE(me.valor_mensualidad, 0) AS valor_mensualidad,
             COALESCE(SUM(p.valor), 0) AS total_pagado,
             MAX(p.fecha_pago) AS ultima_fecha_pago
@@ -55,7 +55,7 @@ async function listarEstadoPorMes(mes, anio) {
        AND p.mes_correspondiente = ? AND p.anio_correspondiente = ? AND p.activo = 1
      WHERE m.activo = 1
      GROUP BY m.id, m.nombres_completos, m.numero_documento, m.whatsapp, m.exento_pago,
-              niv.nivel_id, niv.nivel_nombre, me.valor_mensualidad
+              niv.id, niv.nombre, me.valor_mensualidad
      ORDER BY m.nombres_completos ASC`,
     [mes, anio]
   );

@@ -22,7 +22,15 @@ import './Asistencias.css';
 const ETIQUETAS_ESTADO = { A_TIEMPO: 'A tiempo', TARDE: 'Tarde', AUSENTE: 'Ausente' };
 const VARIANTES_ESTADO = { A_TIEMPO: 'success', TARDE: 'warning', AUSENTE: 'danger' };
 
-const FILTROS_VACIOS = { fecha_desde: '', fecha_hasta: '', nivel_id: '', miembro_id: '', estado: '' };
+function primerDiaMes() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+function ultimoDiaMes() {
+  const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+const FILTROS_VACIOS = { fecha_desde: primerDiaMes(), fecha_hasta: ultimoDiaMes(), nivel_id: '', miembro_id: '', estado: '' };
 
 export default function Asistencias() {
   const [asistencias, setAsistencias] = useState([]);
