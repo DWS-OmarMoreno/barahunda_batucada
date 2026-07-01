@@ -46,21 +46,36 @@ async function obtenerAsistencias(miembroId, { fechaDesde, fechaHasta, nivelId, 
 
 async function obtenerMensualidades(miembroId, { limite, offset }) {
   const [filas] = await pool.query(
-    `SELECT mp.id, mp.mes_correspondiente, mp.anio_correspondiente, mp.valor,
-            mp.fecha_pago, mp.observaciones, mp.soporte_url,
+    `SELECT p.id, p.mes_correspondiente, p.anio_correspondiente, p.valor,
+            p.fecha_pago, p.observaciones, p.soporte_url,
             ms.valor_mensualidad AS mensualidad_configurada
-     FROM mensualidades_pagos mp
-     LEFT JOIN mensualidades ms ON ms.miembro_id = mp.miembro_id
-     WHERE mp.miembro_id = ?
-     ORDER BY mp.anio_correspondiente DESC, mp.mes_correspondiente DESC
+     FROM pagos p
+     LEFT JOIN mensualidades ms ON ms.miembro_id = p.miembro_id
+     WHERE p.miembro_id = ? AND p.activo = 1
+     ORDER BY p.anio_correspondiente DESC, p.mes_correspondiente DESC
      LIMIT ? OFFSET ?`,
     [miembroId, limite, offset]
   );
   const [[{ total }]] = await pool.query(
-    'SELECT COUNT(*) AS total FROM mensualidades_pagos WHERE miembro_id = ?',
+    'SELECT COUNT(*) AS total FROM pagos WHERE miembro_id = ? AND activo = 1',
     [miembroId]
   );
   return { filas, total };
+}
+
+async function obtenerGuias(miembroId) {
+  // Guías activas de todos los niveles a los que pertenece el miembro
+  const [filas] = await pool.query(
+    `SELECT g.id, g.titulo, g.descripcion, g.tipo, g.url_video, g.contenido, g.created_at,
+            n.id AS nivel_id, n.nombre AS nivel_nombre
+     FROM guias g
+     JOIN niveles n ON n.id = g.nivel_id
+     JOIN miembro_niveles mn ON mn.nivel_id = g.nivel_id AND mn.miembro_id = ? AND mn.activo = 1
+     WHERE g.activo = 1
+     ORDER BY n.nombre ASC, g.created_at DESC`,
+    [miembroId]
+  );
+  return filas;
 }
 
 async function obtenerTareas(miembroId) {
@@ -81,4 +96,4 @@ async function obtenerTareas(miembroId) {
   return filas;
 }
 
-module.exports = { obtenerPerfil, obtenerAsistencias, obtenerMensualidades, obtenerTareas };
+module.exports = { obtenerPerfil, obtenerAsistencias, obtenerMensualidades, obtenerTareas, obtenerGuias };

@@ -20,6 +20,11 @@ export async function obtenerMisTareas() {
   return data;
 }
 
+export async function obtenerMisGuias() {
+  const { data } = await api.get('/portal/mis-guias');
+  return data;
+}
+
 export async function enviarEntrega({ tarea_id, url_evidencia, observaciones }) {
   const { data } = await api.post('/portal/entregar', { tarea_id, url_evidencia, observaciones });
   return data;

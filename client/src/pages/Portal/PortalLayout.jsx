@@ -5,10 +5,11 @@ import { useTheme } from '../../context/ThemeContext';
 import './PortalLayout.css';
 
 const MODULOS = [
-  { ruta: '/portal', etiqueta: 'Inicio', end: true },
-  { ruta: '/portal/asistencias', etiqueta: 'Mis asistencias' },
-  { ruta: '/portal/mensualidades', etiqueta: 'Mis pagos' },
-  { ruta: '/portal/tareas', etiqueta: 'Tareas y guías' },
+  { ruta: '/portal',               etiqueta: 'Inicio',       icono: '🏠', end: true },
+  { ruta: '/portal/asistencias',   etiqueta: 'Asistencias',  icono: '📅' },
+  { ruta: '/portal/mensualidades', etiqueta: 'Mis pagos',    icono: '💳' },
+  { ruta: '/portal/guias',         etiqueta: 'Guías',        icono: '📚' },
+  { ruta: '/portal/tareas',        etiqueta: 'Tareas',       icono: '📝' },
 ];
 
 export default function PortalLayout() {
@@ -19,6 +20,9 @@ export default function PortalLayout() {
   if (cargando) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (usuario?.rol !== 'MIEMBRO') return <Navigate to="/" replace />;
+
+  const inicial = (usuario?.nombre || 'E')[0].toUpperCase();
+  const cerrarMenu = () => setMenuAbierto(false);
 
   return (
     <div className="portal-layout">
@@ -31,20 +35,28 @@ export default function PortalLayout() {
           ☰
         </button>
         <div className="portal-layout__marca">
-          {config?.escuela_logo && (
-            <img src={config.escuela_logo} alt="Logo" className="portal-layout__logo" />
-          )}
+          {config?.escuela_logo
+            ? <img src={config.escuela_logo} alt="Logo" className="portal-layout__logo" />
+            : <div className="portal-layout__logo-placeholder">🎵</div>
+          }
           <span className="portal-layout__nombre">{config?.escuela_nombre || 'Escuela de Música'}</span>
         </div>
         <div className="portal-layout__usuario">
-          <span>{usuario?.nombre}</span>
+          <div className="portal-layout__avatar">{inicial}</div>
+          <span className="portal-layout__usuario-nombre">{usuario?.nombre}</span>
           <button className="portal-layout__logout-btn" onClick={logout}>Salir</button>
         </div>
       </header>
 
       <div className="portal-layout__cuerpo">
+        {menuAbierto && (
+          <div className="portal-layout__overlay" onClick={cerrarMenu} />
+        )}
+
         <nav className={`portal-layout__sidebar ${menuAbierto ? 'portal-layout__sidebar--abierto' : ''}`}>
-          <p className="portal-layout__rol-badge">Portal del estudiante</p>
+          <div className="portal-layout__sidebar-header">
+            <span className="portal-layout__sidebar-label">Portal del estudiante</span>
+          </div>
           {MODULOS.map((m) => (
             <NavLink
               key={m.ruta}
@@ -53,9 +65,10 @@ export default function PortalLayout() {
               className={({ isActive }) =>
                 `portal-layout__nav-link ${isActive ? 'portal-layout__nav-link--activo' : ''}`
               }
-              onClick={() => setMenuAbierto(false)}
+              onClick={cerrarMenu}
             >
-              {m.etiqueta}
+              <span className="portal-layout__nav-icono">{m.icono}</span>
+              <span>{m.etiqueta}</span>
             </NavLink>
           ))}
         </nav>

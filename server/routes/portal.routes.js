@@ -10,6 +10,7 @@ router.get('/perfil', controller.perfil);
 router.get('/mis-asistencias', controller.misAsistencias);
 router.get('/mis-mensualidades', controller.misMensualidades);
 router.get('/mis-tareas', controller.misTareas);
+router.get('/mis-guias', controller.misGuias);
 router.post('/entregar', controller.entregar);
 
 module.exports = router;

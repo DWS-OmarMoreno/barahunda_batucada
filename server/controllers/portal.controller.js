@@ -63,6 +63,15 @@ async function misTareas(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function misGuias(req, res, next) {
+  try {
+    const id = miembroId(req);
+    if (!id) return fail(res, { message: 'No estás vinculado a ningún miembro', status: 403 });
+    const guias = await portalModel.obtenerGuias(id);
+    return ok(res, { data: guias, message: 'Guías obtenidas' });
+  } catch (err) { next(err); }
+}
+
 async function entregar(req, res, next) {
   try {
     const id = miembroId(req);
@@ -81,4 +90,4 @@ async function entregar(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { perfil, misAsistencias, misMensualidades, misTareas, entregar };
+module.exports = { perfil, misAsistencias, misMensualidades, misTareas, misGuias, entregar };

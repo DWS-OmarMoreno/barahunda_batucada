@@ -64,7 +64,7 @@ export default function MisTareas() {
 
   return (
     <div className="portal__seccion">
-      <h1>Tareas y guías</h1>
+      <h1>Tareas</h1>
 
       {cargando ? (
         <p className="portal__cargando">Cargando...</p>

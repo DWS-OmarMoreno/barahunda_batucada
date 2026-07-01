@@ -26,6 +26,7 @@ import PortalInicio from './pages/Portal/PortalInicio';
 import MisAsistencias from './pages/Portal/MisAsistencias';
 import MisMensualidades from './pages/Portal/MisMensualidades';
 import MisTareas from './pages/Portal/MisTareas';
+import MisGuias from './pages/Portal/MisGuias';
 
 function App() {
   return (
@@ -76,6 +77,7 @@ function App() {
               <Route index element={<PortalInicio />} />
               <Route path="asistencias" element={<MisAsistencias />} />
               <Route path="mensualidades" element={<MisMensualidades />} />
+              <Route path="guias" element={<MisGuias />} />
               <Route path="tareas" element={<MisTareas />} />
             </Route>
           </Routes>

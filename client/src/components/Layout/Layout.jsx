@@ -6,53 +6,53 @@ import './Layout.css';
 
 const SECCIONES = [
   {
-    etiqueta: null, // Sin encabezado de sección
+    etiqueta: null,
     modulos: [
-      { ruta: '/', etiqueta: 'Dashboard' },
+      { ruta: '/', etiqueta: 'Dashboard', icono: '📊' },
     ],
   },
   {
     etiqueta: 'Miembros',
     modulos: [
-      { ruta: '/miembros', etiqueta: 'Miembros' },
-      { ruta: '/niveles', etiqueta: 'Niveles' },
+      { ruta: '/miembros', etiqueta: 'Miembros', icono: '👥' },
+      { ruta: '/niveles', etiqueta: 'Niveles', icono: '🎼' },
     ],
   },
   {
     etiqueta: 'Operaciones',
     modulos: [
-      { ruta: '/horarios', etiqueta: 'Horarios' },
-      { ruta: '/asistencias', etiqueta: 'Asistencias' },
-      { ruta: '/mensualidades', etiqueta: 'Mensualidades' },
-      { ruta: '/multas', etiqueta: 'Multas' },
+      { ruta: '/horarios', etiqueta: 'Horarios', icono: '📅' },
+      { ruta: '/asistencias', etiqueta: 'Asistencias', icono: '✅' },
+      { ruta: '/mensualidades', etiqueta: 'Mensualidades', icono: '💰' },
+      { ruta: '/multas', etiqueta: 'Multas', icono: '⚠️' },
     ],
   },
   {
     etiqueta: 'Escuela',
     modulos: [
-      { ruta: '/escuela', etiqueta: 'Escuela' },
+      { ruta: '/escuela', etiqueta: 'Escuela', icono: '🎓' },
     ],
   },
   {
     etiqueta: 'Comunicaciones',
     modulos: [
-      { ruta: '/eventos', etiqueta: 'Eventos' },
-      { ruta: '/comunicaciones', etiqueta: 'Comunicaciones' },
+      { ruta: '/eventos', etiqueta: 'Eventos', icono: '🎉' },
+      { ruta: '/comunicaciones', etiqueta: 'Comunicaciones', icono: '📢' },
     ],
   },
   {
     etiqueta: 'Reportes',
     modulos: [
-      { ruta: '/reportes', etiqueta: 'Reportes' },
-      { ruta: '/importacion-exportacion', etiqueta: 'Importar / Exportar' },
+      { ruta: '/reportes', etiqueta: 'Reportes', icono: '📈' },
+      { ruta: '/importacion-exportacion', etiqueta: 'Importar / Exportar', icono: '📦' },
     ],
   },
   {
     etiqueta: 'Configuración',
     modulos: [
-      { ruta: '/configuracion', etiqueta: 'Configuración' },
-      { ruta: '/usuarios', etiqueta: 'Administradores' },
-      { ruta: '/plantillas-correo', etiqueta: 'Plantillas de correo' },
+      { ruta: '/configuracion', etiqueta: 'Configuración', icono: '⚙️' },
+      { ruta: '/usuarios', etiqueta: 'Administradores', icono: '🔑' },
+      { ruta: '/plantillas-correo', etiqueta: 'Plantillas de correo', icono: '✉️' },
     ],
   },
 ];
@@ -61,6 +61,8 @@ export default function Layout() {
   const { usuario, logout } = useAuth();
   const { config } = useTheme();
   const [menuAbierto, setMenuAbierto] = useState(false);
+
+  const inicial = (usuario?.nombre || 'A')[0].toUpperCase();
 
   return (
     <div className="layout">
@@ -73,12 +75,14 @@ export default function Layout() {
           ☰
         </button>
         <div className="layout__marca">
-          {config?.escuela_logo && (
-            <img src={config.escuela_logo} alt="Logo" className="layout__logo" />
-          )}
+          {config?.escuela_logo
+            ? <img src={config.escuela_logo} alt="Logo" className="layout__logo" />
+            : <div className="layout__logo-placeholder">🎵</div>
+          }
           <span className="layout__nombre-escuela">{config?.escuela_nombre || 'Escuela de Música'}</span>
         </div>
         <div className="layout__usuario">
+          <div className="layout__avatar">{inicial}</div>
           <span className="layout__usuario-nombre">{usuario?.nombre}</span>
           <button className="layout__logout-btn" onClick={logout}>Salir</button>
         </div>
@@ -99,12 +103,17 @@ export default function Layout() {
                   className={({ isActive }) => `layout__nav-link ${isActive ? 'layout__nav-link--activo' : ''}`}
                   onClick={() => setMenuAbierto(false)}
                 >
-                  {m.etiqueta}
+                  <span className="layout__nav-icono">{m.icono}</span>
+                  <span>{m.etiqueta}</span>
                 </NavLink>
               ))}
             </div>
           ))}
         </nav>
+
+        {menuAbierto && (
+          <div className="layout__overlay" onClick={() => setMenuAbierto(false)} />
+        )}
 
         <main className="layout__contenido">
           <Outlet />
