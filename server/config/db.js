@@ -1,6 +1,6 @@
 // Conexión a MySQL usando un pool de promesas (mysql2/promise)
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
