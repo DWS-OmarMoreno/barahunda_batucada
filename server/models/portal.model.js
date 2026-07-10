@@ -100,15 +100,16 @@ async function obtenerTareas(miembroId) {
 // correo_institucional, numero_documento, tipo_documento, exento_pago y
 // asistencia_obligatoria son campos de gestión exclusiva del administrador.
 const CAMPOS_EDITABLES = [
-  'nombres_completos',
-  'whatsapp',
-  'email',
-  'fecha_nacimiento',
-  'direccion',
-  'tipo_sangre',
-  'eps',
-  'padece_enfermedad',
+  'nombres_completos', 'whatsapp', 'email',
+  'fecha_nacimiento', 'direccion', 'tipo_sangre', 'eps',
+  'padece_enfermedad', 'enfermedad_cual',
+  'sufre_alergia', 'alergia_cual',
+  'toma_medicamentos', 'medicamentos_cuales',
+  'restricciones_fisicas',
 ];
+
+// Columnas TINYINT(1) — deben enviarse como 0 o 1, no como cadena.
+const CAMPOS_BOOLEANOS = new Set(['padece_enfermedad', 'sufre_alergia', 'toma_medicamentos']);
 
 async function actualizarPerfil(miembroId, datos) {
   const sets = [];
@@ -117,7 +118,10 @@ async function actualizarPerfil(miembroId, datos) {
   for (const campo of CAMPOS_EDITABLES) {
     if (Object.prototype.hasOwnProperty.call(datos, campo)) {
       sets.push(`${campo} = ?`);
-      valores.push(datos[campo] ?? null);
+      const val = CAMPOS_BOOLEANOS.has(campo)
+        ? (datos[campo] ? 1 : 0)
+        : (datos[campo] ?? null);
+      valores.push(val);
     }
   }
 

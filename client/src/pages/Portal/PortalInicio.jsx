@@ -16,13 +16,62 @@ const ACCESOS = [
 
 const TIPOS_SANGRE = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+function perfil2form(p) {
+  return {
+    nombres_completos:  p.nombres_completos  || '',
+    whatsapp:           p.whatsapp           || '',
+    email:              p.email              || '',
+    fecha_nacimiento:   p.fecha_nacimiento   ? String(p.fecha_nacimiento).slice(0, 10) : '',
+    direccion:          p.direccion          || '',
+    tipo_sangre:        p.tipo_sangre        || '',
+    eps:                p.eps                || '',
+    // Booleanos → número 0/1 para que el backend acepte TINYINT(1)
+    padece_enfermedad:  p.padece_enfermedad  ? 1 : 0,
+    enfermedad_cual:    p.enfermedad_cual    || '',
+    sufre_alergia:      p.sufre_alergia      ? 1 : 0,
+    alergia_cual:       p.alergia_cual       || '',
+    toma_medicamentos:  p.toma_medicamentos  ? 1 : 0,
+    medicamentos_cuales: p.medicamentos_cuales || '',
+    restricciones_fisicas: p.restricciones_fisicas || '',
+  };
+}
+
+function CampoTexto({ label, id, value, onChange, required, placeholder, helpText }) {
+  return (
+    <div className="portal__perfil-form-campo">
+      <label htmlFor={id}>{label}{required ? ' *' : ''}</label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+      />
+      {helpText && <small style={{ color: 'var(--color-secondary)', fontSize: 11 }}>{helpText}</small>}
+    </div>
+  );
+}
+
+function CampoSiNo({ label, id, value, onChange }) {
+  return (
+    <div className="portal__perfil-form-campo">
+      <label htmlFor={id}>{label}</label>
+      <select id={id} value={value} onChange={onChange}>
+        <option value={0}>No</option>
+        <option value={1}>Sí</option>
+      </select>
+    </div>
+  );
+}
+
 export default function PortalInicio() {
   const { usuario } = useAuth();
   const [perfil, setPerfil] = useState(null);
   const [cargando, setCargando] = useState(true);
 
   const [editando, setEditando] = useState(false);
-  const [formPerfil, setFormPerfil] = useState({});
+  const [form, setForm] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [errorPerfil, setErrorPerfil] = useState('');
   const [exitoPerfil, setExitoPerfil] = useState('');
@@ -36,32 +85,28 @@ export default function PortalInicio() {
 
   function abrirEdicion() {
     if (!perfil) return;
-    setFormPerfil({
-      nombres_completos: perfil.nombres_completos || '',
-      whatsapp: perfil.whatsapp || '',
-      email: perfil.email || '',
-      fecha_nacimiento: perfil.fecha_nacimiento ? String(perfil.fecha_nacimiento).slice(0, 10) : '',
-      direccion: perfil.direccion || '',
-      tipo_sangre: perfil.tipo_sangre || '',
-      eps: perfil.eps || '',
-      padece_enfermedad: perfil.padece_enfermedad || '',
-    });
+    setForm(perfil2form(perfil));
     setErrorPerfil('');
     setExitoPerfil('');
     setEditando(true);
   }
 
-  function cambiarCampo(campo, valor) {
-    setFormPerfil((p) => ({ ...p, [campo]: valor }));
+  function set(campo) {
+    return (e) => {
+      const val = e.target.type === 'select-one' && (campo === 'padece_enfermedad' || campo === 'sufre_alergia' || campo === 'toma_medicamentos')
+        ? Number(e.target.value)
+        : e.target.value;
+      setForm((p) => ({ ...p, [campo]: val }));
+    };
   }
 
-  async function guardarPerfil(e) {
+  async function guardar(e) {
     e.preventDefault();
     setGuardando(true);
     setErrorPerfil('');
     setExitoPerfil('');
     try {
-      const r = await actualizarPerfil(formPerfil);
+      const r = await actualizarPerfil(form);
       setPerfil(r.data);
       setExitoPerfil('Perfil actualizado correctamente.');
       setTimeout(() => { setEditando(false); setExitoPerfil(''); }, 1400);
@@ -90,9 +135,7 @@ export default function PortalInicio() {
           <p>Bienvenido/a a tu portal de estudiante.</p>
           {niveles.length > 0 && (
             <div className="portal__niveles-pills">
-              {niveles.map((n) => (
-                <span key={n} className="portal__nivel-pill">{n}</span>
-              ))}
+              {niveles.map((n) => <span key={n} className="portal__nivel-pill">{n}</span>)}
             </div>
           )}
         </div>
@@ -121,108 +164,113 @@ export default function PortalInicio() {
         </div>
 
         {editando ? (
-          <form onSubmit={guardarPerfil} className="portal__perfil-form">
-            {/* Campos no editables */}
+          <form onSubmit={guardar} className="portal__perfil-form">
+            {/* Datos no editables (gestionados por la escuela) */}
             <div className="portal__perfil-form-bloqueados">
-              <p>Datos administrados por la escuela</p>
+              <p>Datos gestionados por la escuela</p>
               <div className="portal__perfil-form-bloqueados-grid">
                 <div className="portal__perfil-form-bloqueado-item">
                   <span>Documento</span>
                   <strong>{perfil.tipo_documento} {perfil.numero_documento}</strong>
                 </div>
-                <div className="portal__perfil-form-bloqueado-item">
-                  <span>Correo institucional</span>
-                  <strong>{perfil.correo_institucional || '—'}</strong>
-                </div>
+                {perfil.correo_institucional && (
+                  <div className="portal__perfil-form-bloqueado-item">
+                    <span>Correo institucional</span>
+                    <strong>{perfil.correo_institucional}</strong>
+                  </div>
+                )}
                 <div className="portal__perfil-form-bloqueado-item">
                   <span>Nivel(es)</span>
                   <strong>{perfil.niveles_nombres || '—'}</strong>
                 </div>
-                {perfil.exento_pago ? (
-                  <div className="portal__perfil-form-bloqueado-item">
-                    <span>Pago</span>
-                    <strong>Exento</strong>
-                  </div>
-                ) : null}
               </div>
             </div>
 
-            {/* Campos editables */}
+            {/* ── Datos personales ── */}
+            <p className="portal__perfil-form-seccion">Datos personales</p>
             <div className="portal__perfil-form-campos">
-              <div className="portal__perfil-form-campo">
-                <label htmlFor="pf-nombre">Nombre completo</label>
-                <input
-                  id="pf-nombre"
-                  type="text"
-                  value={formPerfil.nombres_completos}
-                  onChange={(e) => cambiarCampo('nombres_completos', e.target.value)}
-                />
-              </div>
-              <div className="portal__perfil-form-campo">
-                <label htmlFor="pf-whatsapp">WhatsApp</label>
-                <input
-                  id="pf-whatsapp"
-                  type="tel"
-                  value={formPerfil.whatsapp}
-                  onChange={(e) => cambiarCampo('whatsapp', e.target.value)}
-                  placeholder="Ej: 3001234567"
-                />
-              </div>
-              <div className="portal__perfil-form-campo">
-                <label htmlFor="pf-email">Email personal</label>
-                <input
-                  id="pf-email"
-                  type="email"
-                  value={formPerfil.email}
-                  onChange={(e) => cambiarCampo('email', e.target.value)}
-                />
-              </div>
+              <CampoTexto
+                label="Nombre completo" id="pf-nombre"
+                value={form.nombres_completos} onChange={set('nombres_completos')} required
+              />
+              <CampoTexto
+                label="WhatsApp" id="pf-whatsapp"
+                value={form.whatsapp} onChange={set('whatsapp')} required
+                placeholder="Ej: 3001234567"
+              />
+              <CampoTexto
+                label="Email personal" id="pf-email"
+                value={form.email} onChange={set('email')}
+              />
               <div className="portal__perfil-form-campo">
                 <label htmlFor="pf-nacimiento">Fecha de nacimiento</label>
-                <input
-                  id="pf-nacimiento"
-                  type="date"
-                  value={formPerfil.fecha_nacimiento}
-                  onChange={(e) => cambiarCampo('fecha_nacimiento', e.target.value)}
-                />
+                <input id="pf-nacimiento" type="date" value={form.fecha_nacimiento} onChange={set('fecha_nacimiento')} />
               </div>
-              <div className="portal__perfil-form-campo">
-                <label htmlFor="pf-direccion">Dirección</label>
-                <input
-                  id="pf-direccion"
-                  type="text"
-                  value={formPerfil.direccion}
-                  onChange={(e) => cambiarCampo('direccion', e.target.value)}
-                />
-              </div>
+              <CampoTexto
+                label="Dirección" id="pf-direccion"
+                value={form.direccion} onChange={set('direccion')}
+              />
               <div className="portal__perfil-form-campo">
                 <label htmlFor="pf-sangre">Tipo de sangre</label>
-                <select
-                  id="pf-sangre"
-                  value={formPerfil.tipo_sangre}
-                  onChange={(e) => cambiarCampo('tipo_sangre', e.target.value)}
-                >
+                <select id="pf-sangre" value={form.tipo_sangre} onChange={set('tipo_sangre')}>
                   <option value="">— Selecciona —</option>
                   {TIPOS_SANGRE.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
-              <div className="portal__perfil-form-campo">
-                <label htmlFor="pf-eps">EPS</label>
-                <input
-                  id="pf-eps"
-                  type="text"
-                  value={formPerfil.eps}
-                  onChange={(e) => cambiarCampo('eps', e.target.value)}
+              <CampoTexto
+                label="EPS" id="pf-eps"
+                value={form.eps} onChange={set('eps')}
+              />
+            </div>
+
+            {/* ── Información médica ── */}
+            <p className="portal__perfil-form-seccion">Información médica</p>
+            <div className="portal__perfil-form-campos">
+              <CampoSiNo
+                label="¿Padece alguna enfermedad?" id="pf-enf"
+                value={form.padece_enfermedad} onChange={set('padece_enfermedad')}
+              />
+              {form.padece_enfermedad ? (
+                <CampoTexto
+                  label="¿Cuál enfermedad?" id="pf-enf-cual"
+                  value={form.enfermedad_cual} onChange={set('enfermedad_cual')}
+                  placeholder="Describe brevemente"
                 />
-              </div>
-              <div className="portal__perfil-form-campo">
-                <label htmlFor="pf-enfermedad">Condición médica relevante</label>
-                <input
-                  id="pf-enfermedad"
-                  type="text"
-                  value={formPerfil.padece_enfermedad}
-                  onChange={(e) => cambiarCampo('padece_enfermedad', e.target.value)}
-                  placeholder="Opcional"
+              ) : <div />}
+
+              <CampoSiNo
+                label="¿Sufre de alguna alergia?" id="pf-alergia"
+                value={form.sufre_alergia} onChange={set('sufre_alergia')}
+              />
+              {form.sufre_alergia ? (
+                <CampoTexto
+                  label="¿A qué alergia?" id="pf-alergia-cual"
+                  value={form.alergia_cual} onChange={set('alergia_cual')}
+                  placeholder="Describe brevemente"
+                />
+              ) : <div />}
+
+              <CampoSiNo
+                label="¿Toma medicamentos regularmente?" id="pf-meds"
+                value={form.toma_medicamentos} onChange={set('toma_medicamentos')}
+              />
+              {form.toma_medicamentos ? (
+                <CampoTexto
+                  label="¿Cuáles medicamentos?" id="pf-meds-cual"
+                  value={form.medicamentos_cuales} onChange={set('medicamentos_cuales')}
+                  placeholder="Describe brevemente"
+                />
+              ) : <div />}
+
+              <div className="portal__perfil-form-campo" style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="pf-restricciones">Restricciones físicas</label>
+                <textarea
+                  id="pf-restricciones"
+                  rows={3}
+                  value={form.restricciones_fisicas}
+                  onChange={set('restricciones_fisicas')}
+                  placeholder="Describe cualquier limitación física relevante para las clases (opcional)"
+                  style={{ resize: 'vertical' }}
                 />
               </div>
             </div>
@@ -237,61 +285,44 @@ export default function PortalInicio() {
           </form>
         ) : (
           <div className="portal__perfil-campos">
-            <div>
-              <span>Nombre completo</span>
-              <strong>{perfil.nombres_completos}</strong>
-            </div>
-            <div>
-              <span>Documento</span>
-              <strong>{perfil.tipo_documento} {perfil.numero_documento}</strong>
-            </div>
-            <div>
-              <span>WhatsApp</span>
-              <strong>{perfil.whatsapp || '—'}</strong>
-            </div>
-            <div>
-              <span>Email personal</span>
-              <strong>{perfil.email || '—'}</strong>
-            </div>
-            <div>
-              <span>Correo institucional</span>
-              <strong>{perfil.correo_institucional || '—'}</strong>
-            </div>
+            <div><span>Nombre completo</span><strong>{perfil.nombres_completos}</strong></div>
+            <div><span>Documento</span><strong>{perfil.tipo_documento} {perfil.numero_documento}</strong></div>
+            <div><span>WhatsApp</span><strong>{perfil.whatsapp || '—'}</strong></div>
+            <div><span>Email personal</span><strong>{perfil.email || '—'}</strong></div>
+            {perfil.correo_institucional && (
+              <div><span>Correo institucional</span><strong>{perfil.correo_institucional}</strong></div>
+            )}
             <div>
               <span>Estado</span>
-              <StatusBadge
-                texto={perfil.activo ? 'Activo' : 'Inactivo'}
-                variant={perfil.activo ? 'success' : 'secondary'}
-              />
+              <StatusBadge texto={perfil.activo ? 'Activo' : 'Inactivo'} variant={perfil.activo ? 'success' : 'secondary'} />
             </div>
-            <div>
-              <span>Nivel(es)</span>
-              <strong>{perfil.niveles_nombres || '—'}</strong>
-            </div>
+            <div><span>Nivel(es)</span><strong>{perfil.niveles_nombres || '—'}</strong></div>
             {perfil.exento_pago ? (
-              <div>
-                <span>Pago</span>
-                <StatusBadge texto="Exento de pago" variant="info" />
-              </div>
+              <div><span>Pago</span><StatusBadge texto="Exento de pago" variant="info" /></div>
             ) : null}
-            {perfil.fecha_nacimiento ? (
-              <div>
-                <span>Fecha de nacimiento</span>
-                <strong>{formatearFecha(perfil.fecha_nacimiento)}</strong>
-              </div>
+            {perfil.fecha_nacimiento && (
+              <div><span>Fecha de nacimiento</span><strong>{formatearFecha(perfil.fecha_nacimiento)}</strong></div>
+            )}
+            {perfil.eps && <div><span>EPS</span><strong>{perfil.eps}</strong></div>}
+            {perfil.tipo_sangre && <div><span>Tipo de sangre</span><strong>{perfil.tipo_sangre}</strong></div>}
+            {perfil.padece_enfermedad ? (
+              <div><span>Enfermedad</span><strong>{perfil.enfermedad_cual || 'Sí'}</strong></div>
             ) : null}
-            {perfil.fecha_ingreso ? (
-              <div>
-                <span>Fecha de ingreso</span>
-                <strong>{formatearFecha(perfil.fecha_ingreso)}</strong>
-              </div>
+            {perfil.sufre_alergia ? (
+              <div><span>Alergia</span><strong>{perfil.alergia_cual || 'Sí'}</strong></div>
             ) : null}
-            {perfil.eps ? (
-              <div>
-                <span>EPS</span>
-                <strong>{perfil.eps}</strong>
-              </div>
+            {perfil.toma_medicamentos ? (
+              <div><span>Medicamentos</span><strong>{perfil.medicamentos_cuales || 'Sí'}</strong></div>
             ) : null}
+            {perfil.restricciones_fisicas && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <span>Restricciones físicas</span>
+                <strong>{perfil.restricciones_fisicas}</strong>
+              </div>
+            )}
+            {perfil.fecha_ingreso && (
+              <div><span>Fecha de ingreso</span><strong>{formatearFecha(perfil.fecha_ingreso)}</strong></div>
+            )}
           </div>
         )}
       </div>
