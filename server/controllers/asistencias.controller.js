@@ -432,4 +432,112 @@ async function auditoria(req, res, next) {
   }
 }
 
-module.exports = { listar, obtener, contadores, reporte, conAusentes, registrarPublica, registrarPuntoFijo, anular, editar, auditoria };
+// GET /api/asistencias/horarios-disponibles?miembro_id=X&fecha=YYYY-MM-DD
+// Devuelve los horarios activos del día indicado para los niveles en los
+// que está inscrito el miembro. El admin los usa para elegir horario al
+// registrar una asistencia manualmente.
+async function horariosDisponibles(req, res, next) {
+  try {
+    const { miembro_id, fecha } = req.query;
+    if (!miembro_id || !fecha) {
+      return fail(res, { message: 'miembro_id y fecha son obligatorios', status: 400 });
+    }
+
+    const miembro = await miembrosModel.obtenerPorId(miembro_id);
+    if (!miembro || !miembro.activo) {
+      return fail(res, { message: 'Miembro no encontrado o inactivo', status: 404 });
+    }
+
+    const [anio, mes, dia] = fecha.split('-').map(Number);
+    const diaSemana = DIAS_SEMANA_JS[new Date(anio, mes - 1, dia).getDay()];
+
+    const nivelesMiembro = await miembroNivelesModel.listarActivosPorMiembro(miembro_id);
+    if (nivelesMiembro.length === 0) {
+      return ok(res, { data: [], message: 'El miembro no está inscrito en ningún nivel' });
+    }
+
+    const horarios = [];
+    for (const nm of nivelesMiembro) {
+      // eslint-disable-next-line no-await-in-loop
+      const horariosDelDia = await horariosModel.buscarActivoPorNivelYDia(nm.nivel_id, diaSemana);
+      for (const h of horariosDelDia) {
+        horarios.push({ ...h, nivel_nombre: nm.nivel_nombre });
+      }
+    }
+
+    return ok(res, { data: horarios, message: 'Horarios disponibles obtenidos' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/asistencias/manual
+// Registro manual de asistencia por un administrador.
+// El estado (A_TIEMPO / TARDE) se calcula automáticamente comparando la hora
+// ingresada contra la hora de inicio del horario seleccionado.
+async function registrarManual(req, res, next) {
+  try {
+    const { miembro_id, horario_id, fecha, hora } = req.body || {};
+    if (!miembro_id || !horario_id || !fecha || !hora) {
+      return fail(res, { message: 'miembro_id, horario_id, fecha y hora son obligatorios', status: 400 });
+    }
+
+    const miembro = await miembrosModel.obtenerPorId(miembro_id);
+    if (!miembro || !miembro.activo) {
+      return fail(res, { message: 'Miembro no encontrado o inactivo', status: 404 });
+    }
+
+    const horario = await horariosModel.obtenerPorId(horario_id);
+    if (!horario || !horario.activo) {
+      return fail(res, { message: 'Horario no encontrado o inactivo', status: 404 });
+    }
+
+    const nivelesMiembro = await miembroNivelesModel.listarActivosPorMiembro(miembro_id);
+    const nivelMiembro = nivelesMiembro.find((n) => n.nivel_id === horario.nivel_id);
+    if (!nivelMiembro) {
+      return fail(res, { message: 'El miembro no está inscrito en el nivel de este horario', status: 400 });
+    }
+
+    const yaRegistrada = await asistenciasModel.buscarHoyPorMiembroYHorario(miembro_id, horario_id, fecha);
+    if (yaRegistrada) {
+      return fail(res, {
+        message: `Ya existe una asistencia para ${miembro.nombres_completos} en este horario el ${fecha}`,
+        status: 409,
+      });
+    }
+
+    const minutosRetraso = Math.max(0, minutosDesde(horario.hora_inicio, hora));
+    const tolerancia = horario.tolerancia_minutos ?? 10;
+    const estado = minutosRetraso <= tolerancia ? 'A_TIEMPO' : 'TARDE';
+
+    const asistencia = await asistenciasModel.crear({
+      miembro_id,
+      nivel_id: horario.nivel_id,
+      horario_id,
+      fecha,
+      hora,
+      estado,
+      minutos_retraso: estado === 'TARDE' ? minutosRetraso : 0,
+    });
+
+    if (req.auditoria) {
+      await req.auditoria.registrarAccion({
+        modulo: MODULO,
+        accion: 'CREATE',
+        entidadId: asistencia.id,
+        detalle: { ...asistencia, tipo: 'REGISTRO_MANUAL', registrado_por: req.usuario?.id },
+      });
+    }
+
+    return ok(res, {
+      data: asistencia,
+      message: estado === 'A_TIEMPO'
+        ? 'Asistencia registrada manualmente — A tiempo'
+        : `Asistencia registrada manualmente — Tarde (${minutosRetraso} min)`,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listar, obtener, contadores, reporte, conAusentes, registrarPublica, registrarPuntoFijo, anular, editar, auditoria, horariosDisponibles, registrarManual };

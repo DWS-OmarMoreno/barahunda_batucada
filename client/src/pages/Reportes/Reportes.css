@@ -64,3 +64,85 @@
   font-size: 13px;
   color: var(--color-danger);
 }
+
+/* Tabla con scroll horizontal en pantallas pequeñas */
+.reportes__tabla-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Grid de tarjetas para el reporte de asistencias por mes */
+.reportes__cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.reportes__asistencia-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg, #fafafa);
+}
+
+.reportes__asistencia-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reportes__asistencia-card-header strong {
+  font-size: 14px;
+  display: block;
+  color: var(--color-text);
+}
+
+.reportes__asistencia-card-doc {
+  font-size: 12px;
+  color: var(--color-secondary);
+  display: block;
+}
+
+.reportes__asistencia-card-niveles {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.reportes__asistencia-card-stats {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.reportes__asistencia-card-stats > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.reportes__asistencia-card-stats span {
+  color: var(--color-secondary);
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.reportes__asistencia-card-stats strong {
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+@media (max-width: 480px) {
+  .reportes__cards-grid {
+    grid-template-columns: 1fr;
+  }
+}

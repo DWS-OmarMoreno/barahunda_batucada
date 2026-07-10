@@ -90,4 +90,17 @@ async function entregar(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { perfil, misAsistencias, misMensualidades, misTareas, misGuias, entregar };
+async function actualizarPerfil(req, res, next) {
+  try {
+    const id = miembroId(req);
+    if (!id) return fail(res, { message: 'No estás vinculado a ningún miembro', status: 403 });
+
+    const datos = req.body || {};
+    const perfil = await portalModel.actualizarPerfil(id, datos);
+    if (!perfil) return fail(res, { message: 'No se enviaron campos válidos para actualizar', status: 400 });
+
+    return ok(res, { data: perfil, message: 'Perfil actualizado correctamente' });
+  } catch (err) { next(err); }
+}
+
+module.exports = { perfil, misAsistencias, misMensualidades, misTareas, misGuias, entregar, actualizarPerfil };

@@ -35,6 +35,21 @@ export async function editarAsistencia(id, { estado, hora, motivo }) {
   return data;
 }
 
+export async function obtenerHorariosDisponibles({ miembroId, fecha }) {
+  const { data } = await api.get('/asistencias/horarios-disponibles', { params: { miembro_id: miembroId, fecha } });
+  return data;
+}
+
+export async function registrarAsistenciaManual({ miembroId, horarioId, fecha, hora }) {
+  const { data } = await api.post('/asistencias/manual', {
+    miembro_id: miembroId,
+    horario_id: horarioId,
+    fecha,
+    hora,
+  });
+  return data;
+}
+
 // Endpoint público del portal /asistencia (no requiere sesión). horarioId y
 // token vienen del QR escaneado (ver server/utils/asistenciaToken.js) y son
 // obligatorios: sin ellos el backend rechaza el registro.

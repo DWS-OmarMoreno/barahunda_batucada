@@ -518,3 +518,166 @@
   border-radius: var(--radius);
   margin: 0;
 }
+
+/* ── Toggle filters (MisTareas) ──────────────────────── */
+.portal__filtros--toggles { margin-bottom: 16px; }
+
+.portal__toggle {
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+}
+
+.portal__toggle:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.portal__toggle--activo {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ── Editar perfil ────────────────────────────────────── */
+.portal__perfil-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.portal__perfil-card-header h2 { margin-bottom: 0; }
+
+.portal__editar-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+}
+
+.portal__editar-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.portal__perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.portal__perfil-form-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 560px) {
+  .portal__perfil-form-campos { grid-template-columns: 1fr; }
+}
+
+.portal__perfil-form-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal__perfil-form-campo label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-secondary);
+}
+
+.portal__perfil-form-campo input,
+.portal__perfil-form-campo select,
+.portal__perfil-form-campo textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color var(--transition);
+}
+
+.portal__perfil-form-campo input:focus,
+.portal__perfil-form-campo select:focus,
+.portal__perfil-form-campo textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+.portal__perfil-form-campo--bloqueado label::after {
+  content: ' (no editable)';
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.portal__perfil-form-bloqueados {
+  background: var(--color-background);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.portal__perfil-form-bloqueados p {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-secondary);
+  margin-bottom: 10px;
+}
+
+.portal__perfil-form-bloqueados-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+}
+
+@media (max-width: 560px) {
+  .portal__perfil-form-bloqueados-grid { grid-template-columns: 1fr; }
+}
+
+.portal__perfil-form-bloqueado-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.portal__perfil-form-bloqueado-item span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-secondary);
+}
+
+.portal__perfil-form-bloqueado-item strong {
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.portal__perfil-form-acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

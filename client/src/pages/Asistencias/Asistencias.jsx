@@ -5,6 +5,8 @@ import {
   obtenerAuditoriaAsistencia,
   anularAsistencia,
   editarAsistencia,
+  obtenerHorariosDisponibles,
+  registrarAsistenciaManual,
 } from '../../services/asistencias.service';
 import { listarNiveles } from '../../services/niveles.service';
 import { listarMiembros } from '../../services/miembros.service';
@@ -53,6 +55,22 @@ export default function Asistencias() {
   const [formEditar, setFormEditar] = useState({ estado: '', hora: '', motivo: '' });
   const [guardandoEditar, setGuardandoEditar] = useState(false);
   const [errorEditar, setErrorEditar] = useState('');
+
+  const hoyCom = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  const horaActual = (() => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  })();
+
+  const [modalManual, setModalManual] = useState(false);
+  const [formManual, setFormManual] = useState({ miembro_id: '', fecha: hoyCom, horario_id: '', hora: horaActual });
+  const [horariosManual, setHorariosManual] = useState([]);
+  const [cargandoHorariosManual, setCargandoHorariosManual] = useState(false);
+  const [guardandoManual, setGuardandoManual] = useState(false);
+  const [errorManual, setErrorManual] = useState('');
 
   // Trae asistencias reales + filas sintéticas "Ausente" para los miembros
   // inscritos que no registraron asistencia en una clase que les
@@ -180,6 +198,64 @@ export default function Asistencias() {
     }
   }
 
+  function abrirManual() {
+    const d = new Date();
+    const fechaHoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const hora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    setFormManual({ miembro_id: '', fecha: fechaHoy, horario_id: '', hora });
+    setHorariosManual([]);
+    setErrorManual('');
+    setModalManual(true);
+  }
+
+  async function cargarHorariosManual(miembroId, fecha) {
+    if (!miembroId || !fecha) { setHorariosManual([]); return; }
+    setCargandoHorariosManual(true);
+    try {
+      const r = await obtenerHorariosDisponibles({ miembroId, fecha });
+      setHorariosManual(r.data || []);
+      setFormManual((p) => ({ ...p, horario_id: '' }));
+    } catch {
+      setHorariosManual([]);
+    } finally {
+      setCargandoHorariosManual(false);
+    }
+  }
+
+  function cambiarCampoManual(campo, valor) {
+    setFormManual((p) => {
+      const siguiente = { ...p, [campo]: valor };
+      if (campo === 'miembro_id' || campo === 'fecha') {
+        cargarHorariosManual(siguiente.miembro_id, siguiente.fecha);
+      }
+      return siguiente;
+    });
+  }
+
+  async function guardarManual(e) {
+    e.preventDefault();
+    if (!formManual.miembro_id || !formManual.horario_id || !formManual.fecha || !formManual.hora) {
+      setErrorManual('Todos los campos son obligatorios');
+      return;
+    }
+    setGuardandoManual(true);
+    setErrorManual('');
+    try {
+      await registrarAsistenciaManual({
+        miembroId: formManual.miembro_id,
+        horarioId: formManual.horario_id,
+        fecha: formManual.fecha,
+        hora: formManual.hora,
+      });
+      setModalManual(false);
+      cargar();
+    } catch (err) {
+      setErrorManual(err.response?.data?.message || 'No se pudo registrar la asistencia');
+    } finally {
+      setGuardandoManual(false);
+    }
+  }
+
   return (
     <div className="asistencias">
       <div className="asistencias__header">
@@ -189,6 +265,7 @@ export default function Asistencias() {
             Registros generados desde el portal público de autoregistro. Los miembros inscritos que no registraron asistencia aparecen como "Ausente".
           </p>
         </div>
+        <Button onClick={abrirManual}>Registrar manual</Button>
       </div>
 
       <div className="asistencias__indicadores">
@@ -330,6 +407,68 @@ export default function Asistencias() {
           </form>
         )}
       </Modal>
+      <Modal
+        abierto={modalManual}
+        titulo="Registrar asistencia manual"
+        onClose={() => setModalManual(false)}
+        ancho="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModalManual(false)}>Cancelar</Button>
+            <Button onClick={guardarManual} loading={guardandoManual}>Registrar</Button>
+          </>
+        }
+      >
+        <form onSubmit={guardarManual} className="asistencias__form-anular">
+          <FormField
+            label="Miembro"
+            type="select"
+            name="miembro_id"
+            value={formManual.miembro_id}
+            onChange={(e) => cambiarCampoManual('miembro_id', e.target.value)}
+            options={[
+              { value: '', label: 'Selecciona un miembro' },
+              ...miembros.map((m) => ({ value: String(m.id), label: m.nombres_completos })),
+            ]}
+            required
+          />
+          <FormField
+            label="Fecha"
+            type="date"
+            name="fecha"
+            value={formManual.fecha}
+            onChange={(e) => cambiarCampoManual('fecha', e.target.value)}
+            required
+          />
+          <FormField
+            label={cargandoHorariosManual ? 'Horario (cargando...)' : 'Horario'}
+            type="select"
+            name="horario_id"
+            value={formManual.horario_id}
+            onChange={(e) => setFormManual((p) => ({ ...p, horario_id: e.target.value }))}
+            options={[
+              { value: '', label: horariosManual.length === 0 && !cargandoHorariosManual && formManual.miembro_id ? 'Sin horarios para esa fecha' : 'Selecciona un horario' },
+              ...horariosManual.map((h) => ({
+                value: String(h.id),
+                label: `${h.nivel_nombre} — ${h.dia_semana} ${h.hora_inicio?.slice(0, 5)}–${h.hora_fin?.slice(0, 5)}`,
+              })),
+            ]}
+            disabled={horariosManual.length === 0 || cargandoHorariosManual}
+            required
+          />
+          <FormField
+            label="Hora de llegada"
+            type="time"
+            name="hora"
+            value={formManual.hora}
+            onChange={(e) => setFormManual((p) => ({ ...p, hora: e.target.value }))}
+            required
+          />
+          <p className="asistencias__nota">El estado (A tiempo / Tarde) se calculará automáticamente según la tolerancia del horario.</p>
+          {errorManual && <p className="asistencias__error">{errorManual}</p>}
+        </form>
+      </Modal>
+
       <Modal
         abierto={!!modalEditar}
         titulo="Editar asistencia"

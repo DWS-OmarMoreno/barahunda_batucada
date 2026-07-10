@@ -16,6 +16,50 @@ const ETIQUETAS_ESTADO_MULTA = { PENDIENTE: 'Pendiente', PAGADA: 'Pagada', CONDO
 const VARIANTES_ESTADO_MULTA = { PENDIENTE: 'danger', PAGADA: 'success', CONDONADA: 'secondary' };
 const ETIQUETAS_ESTADO_ASISTENCIA = { A_TIEMPO: 'A tiempo', TARDE: 'Tarde', AUSENTE: 'Ausente' };
 
+const SEMAFORO_COLOR = { verde: '#22c55e', amarillo: '#f59e0b', rojo: '#ef4444' };
+const SEMAFORO_BG = { verde: '#f0fdf4', amarillo: '#fffbeb', rojo: '#fef2f2' };
+
+function SemaforoBadge({ valor }) {
+  const color = SEMAFORO_COLOR[valor] || '#9ca3af';
+  const bg = SEMAFORO_BG[valor] || '#f3f4f6';
+  const etiqueta = valor === 'verde' ? 'Verde' : valor === 'amarillo' ? 'Amarillo' : 'Rojo';
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: bg, color, border: `1px solid ${color}`,
+      borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: 600,
+    }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
+      {etiqueta}
+    </span>
+  );
+}
+
+function AsistenciaMesCards({ datos }) {
+  if (!datos?.length) return <p style={{ color: 'var(--color-secondary)', fontSize: 13 }}>No hay registros para estos filtros.</p>;
+  return (
+    <div className="reportes__cards-grid">
+      {datos.map((f) => (
+        <div key={f.miembro_id} className="reportes__asistencia-card">
+          <div className="reportes__asistencia-card-header">
+            <div>
+              <strong>{f.nombres_completos}</strong>
+              <span className="reportes__asistencia-card-doc">{f.numero_documento}</span>
+            </div>
+            <SemaforoBadge valor={f.semaforo} />
+          </div>
+          <div className="reportes__asistencia-card-niveles">{f.niveles_nombres}</div>
+          <div className="reportes__asistencia-card-stats">
+            <div><span>Clases del mes</span><strong>{f.clases_mes}</strong></div>
+            <div><span>Ausencias del mes</span><strong>{f.ausencias_mes}</strong></div>
+            <div><span>Ausencias consecutivas</span><strong>{f.ausencias_consecutivas}</strong></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Catálogo de los 6 reportes exportables del Módulo 10, con sus filtros y
 // columnas de vista previa. `campos` usa directamente el nombre del parámetro
 // que espera la API (mes, anio, nivel_id, miembro_id, estado, fecha_desde, fecha_hasta).
@@ -108,6 +152,22 @@ const REPORTES = [
       { clave: 'fecha', titulo: 'Fecha', render: (f) => formatearFecha(f.fecha) },
       { clave: 'hora', titulo: 'Hora', render: (f) => formatearHora(f.hora) },
       { clave: 'estado', titulo: 'Estado', render: (f) => ETIQUETAS_ESTADO_ASISTENCIA[f.estado] || f.estado },
+    ],
+  },
+  {
+    clave: 'asistenciasMes',
+    titulo: 'Asistencias por mes',
+    descripcion: 'Por cada miembro activo: clases del mes, ausencias del mes y racha de ausencias consecutivas con semáforo. Ordenado por mayor riesgo.',
+    campos: ['mes', 'anio'],
+    renderPreview: (datos) => <AsistenciaMesCards datos={datos} />,
+    columnas: [
+      { clave: 'nombres_completos', titulo: 'Miembro' },
+      { clave: 'numero_documento', titulo: 'Documento' },
+      { clave: 'niveles_nombres', titulo: 'Niveles' },
+      { clave: 'clases_mes', titulo: 'Clases del mes' },
+      { clave: 'ausencias_mes', titulo: 'Ausencias del mes' },
+      { clave: 'ausencias_consecutivas', titulo: 'Ausencias consecutivas' },
+      { clave: 'semaforo', titulo: 'Semáforo', render: (f) => <SemaforoBadge valor={f.semaforo} /> },
     ],
   },
 ];
@@ -257,13 +317,17 @@ function ReportCard({ reporte, niveles, miembros }) {
       {mostrarPreview && (
         error ? (
           <p className="reportes__error">{error}</p>
+        ) : reporte.renderPreview ? (
+          cargando ? <p style={{ fontSize: 13, color: 'var(--color-secondary)' }}>Cargando...</p> : reporte.renderPreview(resultados || [])
         ) : (
-          <DataTable
-            cargando={cargando}
-            datos={resultados || []}
-            columnas={reporte.columnas}
-            vacioTexto="No hay registros para estos filtros."
-          />
+          <div className="reportes__tabla-scroll">
+            <DataTable
+              cargando={cargando}
+              datos={resultados || []}
+              columnas={reporte.columnas}
+              vacioTexto="No hay registros para estos filtros."
+            />
+          </div>
         )
       )}
     </div>

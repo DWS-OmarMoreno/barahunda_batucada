@@ -14,5 +14,6 @@ router.get('/al-dia', controller.alDia);
 router.get('/multas', controller.multas);
 router.get('/asistencia-miembro', controller.asistenciaMiembro);
 router.get('/asistencia-nivel', controller.asistenciaNivel);
+router.get('/asistencias-mes', controller.asistenciasMes);
 
 module.exports = router;

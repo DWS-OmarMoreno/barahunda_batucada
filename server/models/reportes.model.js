@@ -347,6 +347,145 @@ async function multasHistorial({ miembroId, estado, fechaDesde, fechaHasta }) {
   return filas;
 }
 
+// ---------- Reporte: asistencias por mes con ausencias consecutivas ----------
+//
+// Por cada miembro activo con horarios asignados, calcula:
+//   - clases_mes:            clases programadas en el mes seleccionado
+//   - ausencias_mes:         clases sin registro A_TIEMPO/TARDE en ese mes
+//   - ausencias_consecutivas: racha actual de ausencias seguidas hasta hoy
+//                             (puede venir arrastrándose de meses anteriores)
+//   - semaforo:              'verde' (0-1), 'amarillo' (2), 'rojo' (3+)
+//
+// Para calcular la racha se mira hasta 6 meses atrás respecto al mes
+// seleccionado, o desde fecha_go_live si es posterior.
+async function asistenciasPorMes({ mes, anio }) {
+  const config = await configuracionModel.obtener();
+  const tz = config?.zona_horaria || 'America/Bogota';
+
+  // Hoy en la zona horaria configurada
+  const hoyEnTz = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+
+  const mesNum = Number(mes);
+  const anioNum = Number(anio);
+  const primerDia = `${anioNum}-${pad(mesNum)}-01`;
+  const ultimoDia = (() => {
+    const d = new Date(anioNum, mesNum, 0);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  })();
+
+  // Rango extendido para calcular consecutivas (6 meses antes del mes seleccionado)
+  const fechaDesdeConsecutivas = (() => {
+    const d = new Date(anioNum, mesNum - 1 - 6, 1);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`;
+  })();
+
+  let fechaInicio = fechaDesdeConsecutivas;
+  if (config?.fecha_go_live && config.fecha_go_live > fechaInicio) {
+    fechaInicio = config.fecha_go_live;
+  }
+
+  // No miramos fechas futuras
+  const hasteFecha = ultimoDia < hoyEnTz ? ultimoDia : hoyEnTz;
+
+  const [miembros] = await pool.query(
+    `SELECT m.id, m.nombres_completos, m.numero_documento
+     FROM miembros m WHERE m.activo = 1 ORDER BY m.nombres_completos ASC`
+  );
+
+  const todosHorarios = await horariosModel.listarActivosTodos();
+  const DIA_JS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+
+  function generarFechasParaDia(desde, hasta, diaSemana) {
+    const fechas = [];
+    const [a1, m1, d1] = desde.split('-').map(Number);
+    const [a2, m2, d2] = hasta.split('-').map(Number);
+    const curr = new Date(a1, m1 - 1, d1);
+    const fin = new Date(a2, m2 - 1, d2);
+    while (curr <= fin) {
+      if (DIA_JS[curr.getDay()] === diaSemana) {
+        fechas.push(`${curr.getFullYear()}-${pad(curr.getMonth() + 1)}-${pad(curr.getDate())}`);
+      }
+      curr.setDate(curr.getDate() + 1);
+    }
+    return fechas;
+  }
+
+  const resultado = [];
+
+  for (const miembro of miembros) {
+    // eslint-disable-next-line no-await-in-loop
+    const inscripciones = await miembroNivelesModel.listarActivosPorMiembro(miembro.id);
+    if (inscripciones.length === 0) continue;
+
+    const nivelIds = new Set(inscripciones.map((i) => i.nivel_id));
+    const niveles_nombres = inscripciones.map((i) => i.nivel_nombre).join(', ');
+    const horariosDelMiembro = todosHorarios.filter((h) => nivelIds.has(h.nivel_id));
+    if (horariosDelMiembro.length === 0) continue;
+
+    const todasFechasSet = new Set();
+    const fechasMesSet = new Set();
+
+    for (const h of horariosDelMiembro) {
+      generarFechasParaDia(fechaInicio, hasteFecha, h.dia_semana).forEach((f) => {
+        todasFechasSet.add(f);
+        if (f >= primerDia && f <= ultimoDia) fechasMesSet.add(f);
+      });
+    }
+
+    if (fechasMesSet.size === 0) continue;
+
+    const todasFechas = [...todasFechasSet].sort();
+
+    // eslint-disable-next-line no-await-in-loop
+    const [asistencias] = await pool.query(
+      `SELECT fecha, estado FROM asistencias
+       WHERE miembro_id = ? AND fecha >= ? AND fecha <= ? AND activo = 1`,
+      [miembro.id, fechaInicio, hasteFecha]
+    );
+
+    const porFecha = new Map(asistencias.map((a) => [String(a.fecha).slice(0, 10), a.estado]));
+
+    let ausenciasMes = 0;
+    for (const f of fechasMesSet) {
+      const est = porFecha.get(f);
+      if (!est || est === 'AUSENTE') ausenciasMes++;
+    }
+
+    let consecutivas = 0;
+    for (let i = todasFechas.length - 1; i >= 0; i--) {
+      const est = porFecha.get(todasFechas[i]);
+      if (!est || est === 'AUSENTE') { consecutivas++; } else { break; }
+    }
+
+    let semaforo = 'verde';
+    if (consecutivas >= 3) semaforo = 'rojo';
+    else if (consecutivas === 2) semaforo = 'amarillo';
+
+    resultado.push({
+      miembro_id: miembro.id,
+      nombres_completos: miembro.nombres_completos,
+      numero_documento: miembro.numero_documento,
+      niveles_nombres,
+      clases_mes: fechasMesSet.size,
+      ausencias_mes: ausenciasMes,
+      ausencias_consecutivas: consecutivas,
+      semaforo,
+    });
+  }
+
+  const PRIO = { rojo: 0, amarillo: 1, verde: 2 };
+  resultado.sort((a, b) => {
+    const pa = PRIO[a.semaforo] ?? 3;
+    const pb = PRIO[b.semaforo] ?? 3;
+    if (pa !== pb) return pa - pb;
+    return b.ausencias_consecutivas - a.ausencias_consecutivas;
+  });
+
+  return resultado;
+}
+
 module.exports = {
   kpis,
   pagosPorMes,
@@ -356,4 +495,5 @@ module.exports = {
   alertas,
   mensualidadesPorEstado,
   multasHistorial,
+  asistenciasPorMes,
 };

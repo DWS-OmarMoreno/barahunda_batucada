@@ -10,6 +10,8 @@ import './Portal.css';
 export default function MisTareas() {
   const [tareas, setTareas] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [mostrarEntregadas, setMostrarEntregadas] = useState(false);
+  const [mostrarVencidas, setMostrarVencidas] = useState(false);
 
   const [modalEntrega, setModalEntrega] = useState(null);
   const [formEntrega, setFormEntrega] = useState({ url_evidencia: '', observaciones: '' });
@@ -62,17 +64,41 @@ export default function MisTareas() {
     return { texto: 'Pendiente', variant: 'warning' };
   }
 
+  const tareasFiltradas = tareas.filter((t) => {
+    const est = estadoTarea(t);
+    if (!mostrarEntregadas && (est.variant === 'success' || est.texto === 'Entregada')) return false;
+    if (!mostrarVencidas && est.texto === 'Vencida') return false;
+    return true;
+  });
+
   return (
     <div className="portal__seccion">
       <h1>Tareas</h1>
 
+      <div className="portal__filtros portal__filtros--toggles">
+        <button
+          type="button"
+          className={`portal__toggle ${mostrarEntregadas ? 'portal__toggle--activo' : ''}`}
+          onClick={() => setMostrarEntregadas((v) => !v)}
+        >
+          {mostrarEntregadas ? '✓ ' : ''}Mostrar entregadas
+        </button>
+        <button
+          type="button"
+          className={`portal__toggle ${mostrarVencidas ? 'portal__toggle--activo' : ''}`}
+          onClick={() => setMostrarVencidas((v) => !v)}
+        >
+          {mostrarVencidas ? '✓ ' : ''}Mostrar vencidas
+        </button>
+      </div>
+
       {cargando ? (
         <p className="portal__cargando">Cargando...</p>
-      ) : tareas.length === 0 ? (
-        <p className="portal__vacio">No hay tareas asignadas a tu nivel.</p>
+      ) : tareasFiltradas.length === 0 ? (
+        <p className="portal__vacio">{tareas.length === 0 ? 'No hay tareas asignadas a tu nivel.' : 'No hay tareas pendientes. Activa los filtros para ver entregadas o vencidas.'}</p>
       ) : (
         <div className="portal__tareas-lista">
-          {tareas.map((t) => {
+          {tareasFiltradas.map((t) => {
             const estado = estadoTarea(t);
             return (
               <div key={t.id} className="portal__tarea-card">

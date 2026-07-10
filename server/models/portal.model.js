@@ -96,4 +96,40 @@ async function obtenerTareas(miembroId) {
   return filas;
 }
 
-module.exports = { obtenerPerfil, obtenerAsistencias, obtenerMensualidades, obtenerTareas, obtenerGuias };
+// Campos que el miembro puede editar desde su portal.
+// correo_institucional, numero_documento, tipo_documento, exento_pago y
+// asistencia_obligatoria son campos de gestión exclusiva del administrador.
+const CAMPOS_EDITABLES = [
+  'nombres_completos',
+  'whatsapp',
+  'email',
+  'fecha_nacimiento',
+  'direccion',
+  'tipo_sangre',
+  'eps',
+  'padece_enfermedad',
+];
+
+async function actualizarPerfil(miembroId, datos) {
+  const sets = [];
+  const valores = [];
+
+  for (const campo of CAMPOS_EDITABLES) {
+    if (Object.prototype.hasOwnProperty.call(datos, campo)) {
+      sets.push(`${campo} = ?`);
+      valores.push(datos[campo] ?? null);
+    }
+  }
+
+  if (sets.length === 0) return null;
+
+  valores.push(miembroId);
+  await pool.query(
+    `UPDATE miembros SET ${sets.join(', ')} WHERE id = ?`,
+    valores
+  );
+
+  return obtenerPerfil(miembroId);
+}
+
+module.exports = { obtenerPerfil, obtenerAsistencias, obtenerMensualidades, obtenerTareas, obtenerGuias, actualizarPerfil };

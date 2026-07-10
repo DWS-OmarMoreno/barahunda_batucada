@@ -272,4 +272,35 @@ async function asistenciaNivel(req, res, next) {
   }
 }
 
-module.exports = { dashboard, mensualidades, pendientes, alDia, multas, asistenciaMiembro, asistenciaNivel };
+// ---------- Asistencias por mes con racha de ausencias consecutivas ----------
+
+async function asistenciasMes(req, res, next) {
+  try {
+    const { mes, anio } = parametrosMesAnio(req.query);
+
+    const filas = await reportesModel.asistenciasPorMes({ mes, anio });
+
+    const ETIQUETAS_SEMAFORO = { verde: 'Verde', amarillo: 'Amarillo', rojo: 'Rojo' };
+
+    return responderReporte(req, res, {
+      nombreReporte: 'asistencias_por_mes',
+      titulo: 'Asistencias por mes',
+      subtitulo: `${mes}/${anio}`,
+      filtros: { mes, anio },
+      filas,
+      columnas: [
+        { clave: 'nombres_completos', titulo: 'Miembro' },
+        { clave: 'numero_documento', titulo: 'Documento' },
+        { clave: 'niveles_nombres', titulo: 'Niveles' },
+        { clave: 'clases_mes', titulo: 'Clases del mes' },
+        { clave: 'ausencias_mes', titulo: 'Ausencias del mes' },
+        { clave: 'ausencias_consecutivas', titulo: 'Ausencias consecutivas' },
+        { clave: 'semaforo', titulo: 'Semáforo', render: (f) => ETIQUETAS_SEMAFORO[f.semaforo] || f.semaforo },
+      ],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { dashboard, mensualidades, pendientes, alDia, multas, asistenciaMiembro, asistenciaNivel, asistenciasMes };

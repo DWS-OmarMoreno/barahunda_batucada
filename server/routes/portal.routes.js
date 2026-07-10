@@ -7,6 +7,7 @@ const controller = require('../controllers/portal.controller');
 router.use(verifyToken, verificarRol('MIEMBRO'));
 
 router.get('/perfil', controller.perfil);
+router.patch('/perfil', controller.actualizarPerfil);
 router.get('/mis-asistencias', controller.misAsistencias);
 router.get('/mis-mensualidades', controller.misMensualidades);
 router.get('/mis-tareas', controller.misTareas);

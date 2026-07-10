@@ -7,6 +7,7 @@ const ENDPOINTS = {
   multas: '/reportes/multas',
   asistenciaMiembro: '/reportes/asistencia-miembro',
   asistenciaNivel: '/reportes/asistencia-nivel',
+  asistenciasMes: '/reportes/asistencias-mes',
 };
 
 export async function obtenerDashboard() {

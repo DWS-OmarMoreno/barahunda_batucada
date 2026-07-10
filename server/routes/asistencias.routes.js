@@ -16,6 +16,8 @@ router.get('/', verifyToken, controller.listar);
 router.get('/contadores', verifyToken, controller.contadores);
 router.get('/reporte', verifyToken, controller.reporte);
 router.get('/con-ausentes', verifyToken, controller.conAusentes);
+router.get('/horarios-disponibles', verifyToken, controller.horariosDisponibles);
+router.post('/manual', verifyToken, auditoriaMiddleware, controller.registrarManual);
 router.get('/:id', verifyToken, controller.obtener);
 router.patch('/:id/anular', verifyToken, auditoriaMiddleware, controller.anular);
 router.patch('/:id/editar', verifyToken, auditoriaMiddleware, controller.editar);
