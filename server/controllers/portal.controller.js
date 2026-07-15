@@ -103,4 +103,32 @@ async function actualizarPerfil(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { perfil, misAsistencias, misMensualidades, misTareas, misGuias, entregar, actualizarPerfil };
+async function miPlan(req, res, next) {
+  try {
+    const id = miembroId(req);
+    if (!id) return fail(res, { message: 'No estás vinculado a ningún miembro', status: 403 });
+    const planes = await portalModel.obtenerPlanesActivos(id);
+    return ok(res, { data: planes, message: 'Planes obtenidos' });
+  } catch (err) { next(err); }
+}
+
+async function entregarItem(req, res, next) {
+  try {
+    const id = miembroId(req);
+    if (!id) return fail(res, { message: 'No estás vinculado a ningún miembro', status: 403 });
+
+    const { plan_item_id, url_evidencia, observaciones } = req.body || {};
+    if (!plan_item_id) return fail(res, { message: 'plan_item_id es obligatorio', status: 400 });
+
+    const entregasModel = require('../models/entregas.model');
+    const entrega = await entregasModel.crearOActualizarPlanItem({
+      planItemId: plan_item_id,
+      miembroId: id,
+      urlEvidencia: url_evidencia,
+      observaciones,
+    });
+    return ok(res, { data: entrega, message: 'Entrega registrada correctamente', status: 201 });
+  } catch (err) { next(err); }
+}
+
+module.exports = { perfil, misAsistencias, misMensualidades, misTareas, misGuias, entregar, actualizarPerfil, miPlan, entregarItem };

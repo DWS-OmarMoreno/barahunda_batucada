@@ -27,6 +27,7 @@ const exportacionRoutes = require('./routes/exportacion.routes');
 const portalRoutes = require('./routes/portal.routes');
 const escuelaRoutes = require('./routes/escuela.routes');
 const correoRoutes = require('./routes/correo.routes');
+const planesEstudioRoutes = require('./routes/planesEstudio.routes');
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/exportacion', exportacionRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/escuela', escuelaRoutes);
 app.use('/api/correo', correoRoutes);
+app.use('/api/planes-estudio', planesEstudioRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

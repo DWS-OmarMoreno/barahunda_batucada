@@ -74,4 +74,53 @@ async function calificar(id, { calificacion, retroalimentacion, calificadoPor })
   return obtenerPorId(id);
 }
 
-module.exports = { obtenerPorId, listar, crearOActualizar, calificar };
+// ── Plan items ────────────────────────────────────────────────────────────
+
+async function obtenerPorPlanItem(id) {
+  const [rows] = await pool.query(
+    `SELECT e.*, pi.titulo AS item_titulo, m.nombres_completos AS miembro_nombre,
+            u.nombre AS calificado_por_nombre
+     FROM entregas e
+     JOIN plan_items pi ON pi.id = e.plan_item_id
+     JOIN miembros m ON m.id = e.miembro_id
+     LEFT JOIN usuarios u ON u.id = e.calificado_por
+     WHERE e.id = ?`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+// Upsert de entrega para un ítem de plan (incluye validación de desbloqueo).
+async function crearOActualizarPlanItem({ planItemId, miembroId, urlEvidencia, observaciones }) {
+  const planesModel = require('./planesEstudio.model');
+
+  // Validar desbloqueo
+  const desbloqueado = await planesModel.verificarDesbloqueo(planItemId, miembroId);
+  if (!desbloqueado) {
+    throw Object.assign(
+      new Error('Debes completar todas las actividades anteriores antes de acceder a este examen'),
+      { status: 403 }
+    );
+  }
+
+  const [existentes] = await pool.query(
+    'SELECT id FROM entregas WHERE plan_item_id = ? AND miembro_id = ?',
+    [planItemId, miembroId]
+  );
+
+  if (existentes.length > 0) {
+    await pool.query(
+      'UPDATE entregas SET url_evidencia = ?, observaciones = ? WHERE id = ?',
+      [urlEvidencia || null, observaciones || null, existentes[0].id]
+    );
+    return obtenerPorPlanItem(existentes[0].id);
+  }
+
+  const [res] = await pool.query(
+    'INSERT INTO entregas (plan_item_id, miembro_id, url_evidencia, observaciones) VALUES (?, ?, ?, ?)',
+    [planItemId, miembroId, urlEvidencia || null, observaciones || null]
+  );
+  return obtenerPorPlanItem(res.insertId);
+}
+
+module.exports = { obtenerPorId, listar, crearOActualizar, calificar, crearOActualizarPlanItem, obtenerPorPlanItem };

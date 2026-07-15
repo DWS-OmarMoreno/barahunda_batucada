@@ -21,6 +21,8 @@ import ImportacionExportacion from './pages/ImportacionExportacion/ImportacionEx
 import Usuarios from './pages/Usuarios/Usuarios';
 import Escuela from './pages/Escuela/Escuela';
 import PlantillasCorreo from './pages/PlantillasCorreo/PlantillasCorreo';
+import PlanesEstudio from './pages/PlanesEstudio/PlanesEstudio';
+import PlanDetalle from './pages/PlanesEstudio/PlanDetalle';
 import PortalLayout from './pages/Portal/PortalLayout';
 import PortalInicio from './pages/Portal/PortalInicio';
 import MisAsistencias from './pages/Portal/MisAsistencias';
@@ -63,6 +65,8 @@ function App() {
               <Route path="configuracion" element={<Configuracion />} />
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="plantillas-correo" element={<PlantillasCorreo />} />
+              <Route path="planes-estudio" element={<PlanesEstudio />} />
+              <Route path="planes-estudio/:id" element={<PlanDetalle />} />
             </Route>
 
             {/* Portal del miembro — layout y guard propios */}

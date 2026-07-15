@@ -31,6 +31,7 @@ const SECCIONES = [
     etiqueta: 'Escuela',
     modulos: [
       { ruta: '/escuela', etiqueta: 'Escuela', icono: '🎓' },
+      { ruta: '/planes-estudio', etiqueta: 'Planes de estudio', icono: '📋' },
     ],
   },
   {

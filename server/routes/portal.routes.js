@@ -13,5 +13,7 @@ router.get('/mis-mensualidades', controller.misMensualidades);
 router.get('/mis-tareas', controller.misTareas);
 router.get('/mis-guias', controller.misGuias);
 router.post('/entregar', controller.entregar);
+router.get('/mi-plan', controller.miPlan);
+router.post('/entregar-item', controller.entregarItem);
 
 module.exports = router;

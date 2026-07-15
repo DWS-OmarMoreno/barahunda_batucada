@@ -682,6 +682,212 @@
   justify-content: flex-end;
 }
 
+/* ── Plan de estudios (MisTareas) ───────────────────────── */
+.portal__vacio-inline {
+  color: var(--color-secondary);
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.portal__planes {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.portal__plan-bloque {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.portal__plan-nivel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-primary);
+  margin-bottom: 2px;
+}
+
+.portal__plan-nombre {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.portal__plan-desc {
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin-bottom: 16px;
+}
+
+/* Stepper list */
+.portal__plan-lista {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.portal__plan-item {
+  display: grid;
+  grid-template-columns: 32px 12px 1fr;
+  align-items: stretch;
+  min-height: 56px;
+}
+
+.portal__plan-item:last-child .portal__plan-conector {
+  display: none;
+}
+
+/* Burbuja de orden */
+.portal__plan-burbuja {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 10px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  transition: all 0.2s;
+}
+
+.portal__plan-burbuja--examen {
+  background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent);
+  border-color: var(--color-warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
+}
+
+.portal__plan-burbuja--ok {
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.portal__plan-burbuja--lock {
+  background: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-secondary);
+  font-size: 16px;
+}
+
+/* Línea vertical conectora */
+.portal__plan-conector {
+  width: 2px;
+  background: var(--color-border);
+  margin: 42px auto 0;
+}
+
+/* Cuerpo del ítem */
+.portal__plan-item-body {
+  padding: 8px 0 16px 12px;
+}
+
+.portal__plan-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.portal__plan-item-tipo {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-secondary);
+  margin-bottom: 2px;
+}
+
+.portal__plan-item-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  color: var(--color-text);
+}
+
+.portal__plan-item--bloqueado .portal__plan-item-titulo {
+  color: var(--color-secondary);
+}
+
+.portal__plan-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.portal__plan-item-nota {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.portal__plan-item-lock-label {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.portal__plan-item-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.portal__plan-item-fecha {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.portal__plan-item-retro {
+  font-size: 12px;
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+  border-left: 3px solid var(--color-success);
+  padding: 2px 8px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+}
+
+/* Sección tareas adicionales */
+.portal__tareas-seccion {
+  margin-top: 8px;
+}
+
+.portal__tareas-subtitulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  .portal__plan-item-top {
+    flex-direction: column;
+  }
+  .portal__plan-item-right {
+    flex-wrap: wrap;
+  }
+}
+
+/* ── fin Plan de estudios ──────────────────────────────── */
+
 .portal__perfil-form-seccion {
   font-size: 10px;
   font-weight: 700;

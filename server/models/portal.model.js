@@ -136,4 +136,67 @@ async function actualizarPerfil(miembroId, datos) {
   return obtenerPerfil(miembroId);
 }
 
-module.exports = { obtenerPerfil, obtenerAsistencias, obtenerMensualidades, obtenerTareas, obtenerGuias, actualizarPerfil };
+// ── Plan de estudios activo del miembro ──────────────────────────────────
+
+async function obtenerPlanesActivos(miembroId) {
+  const planesModel = require('./planesEstudio.model');
+
+  // Niveles activos del miembro
+  const [inscripciones] = await pool.query(
+    `SELECT mn.nivel_id, n.nombre AS nivel_nombre
+     FROM miembro_niveles mn
+     JOIN niveles n ON n.id = mn.nivel_id
+     WHERE mn.miembro_id = ? AND mn.activo = 1`,
+    [miembroId]
+  );
+  if (inscripciones.length === 0) return [];
+
+  const resultado = [];
+
+  for (const insc of inscripciones) {
+    // Plan activo del nivel
+    const [[plan]] = await pool.query( // eslint-disable-line no-await-in-loop
+      `SELECT * FROM planes_estudio WHERE nivel_id = ? AND activo = 1 LIMIT 1`,
+      [insc.nivel_id]
+    );
+    if (!plan) continue;
+
+    // Ítems del plan en orden
+    const items = await planesModel.listarItems(plan.id); // eslint-disable-line no-await-in-loop
+
+    if (items.length === 0) {
+      resultado.push({ ...plan, nivel_nombre: insc.nivel_nombre, items: [] });
+      continue;
+    }
+
+    const ids = items.map((i) => i.id);
+    const placeholders = ids.map(() => '?').join(', ');
+
+    // Entrega del miembro para cada ítem
+    const [entregas] = await pool.query( // eslint-disable-line no-await-in-loop
+      `SELECT plan_item_id, calificacion, calificacion_categorica, fecha_entrega, url_evidencia, observaciones
+       FROM entregas
+       WHERE miembro_id = ? AND plan_item_id IN (${placeholders})`,
+      [miembroId, ...ids]
+    );
+    const porItem = new Map(entregas.map((e) => [e.plan_item_id, e]));
+
+    // Desbloqueo de exámenes
+    const itemsConEstado = [];
+    for (const item of items) {
+      const entrega = porItem.get(item.id) || null;
+      let desbloqueado = true;
+      if (item.tipo === 'EXAMEN') {
+        // eslint-disable-next-line no-await-in-loop
+        desbloqueado = await planesModel.verificarDesbloqueo(item.id, miembroId);
+      }
+      itemsConEstado.push({ ...item, entrega, desbloqueado });
+    }
+
+    resultado.push({ ...plan, nivel_nombre: insc.nivel_nombre, items: itemsConEstado });
+  }
+
+  return resultado;
+}
+
+module.exports = { obtenerPerfil, obtenerAsistencias, obtenerMensualidades, obtenerTareas, obtenerGuias, actualizarPerfil, obtenerPlanesActivos };
