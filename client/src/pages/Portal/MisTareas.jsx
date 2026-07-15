@@ -68,6 +68,20 @@ function PlanItem({ plan, item, onEntregar, onEditar }) {
           )}
         </div>
 
+        {item.descripcion && (
+          <p className="mistarea__item-desc">{item.descripcion}</p>
+        )}
+        {item.url_recurso && (
+          <a
+            href={item.url_recurso}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mistarea__item-recurso"
+          >
+            📎 Ver recursos
+          </a>
+        )}
+
         {entregado && (
           <div className="mistarea__item-entregado">
             <span className="mistarea__item-entregado-label">

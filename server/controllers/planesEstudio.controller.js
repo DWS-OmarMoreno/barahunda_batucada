@@ -115,11 +115,11 @@ async function listarItems(req, res, next) {
 
 async function crearItem(req, res, next) {
   try {
-    const { titulo, descripcion, tipo, ponderado, fecha_limite, seccion_id } = req.body;
+    const { titulo, descripcion, url_recurso, tipo, ponderado, fecha_limite, seccion_id } = req.body;
     if (!titulo) return fail(res, { message: 'El título del ítem es obligatorio', status: 400 });
     // seccionId desde URL (ruta /secciones/:seccionId/items) o desde body
     const seccionId = req.params.seccionId || seccion_id || null;
-    const item = await model.crearItem({ planId: req.params.id, seccionId, titulo, descripcion, tipo, ponderado, fechaLimite: fecha_limite });
+    const item = await model.crearItem({ planId: req.params.id, seccionId, titulo, descripcion, urlRecurso: url_recurso, tipo, ponderado, fechaLimite: fecha_limite });
     if (req.auditoria) await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'CREATE_ITEM', entidadId: item.id, detalle: { titulo, tipo } });
     return ok(res, { data: item, message: 'Ítem creado', status: 201 });
   } catch (err) { next(err); }
@@ -127,8 +127,8 @@ async function crearItem(req, res, next) {
 
 async function actualizarItem(req, res, next) {
   try {
-    const { titulo, descripcion, tipo, ponderado, fecha_limite, seccion_id } = req.body;
-    const item = await model.actualizarItem(req.params.itemId, { titulo, descripcion, tipo, seccionId: seccion_id, ponderado, fechaLimite: fecha_limite });
+    const { titulo, descripcion, url_recurso, tipo, ponderado, fecha_limite, seccion_id } = req.body;
+    const item = await model.actualizarItem(req.params.itemId, { titulo, descripcion, urlRecurso: url_recurso, tipo, seccionId: seccion_id, ponderado, fechaLimite: fecha_limite });
     return ok(res, { data: item, message: 'Ítem actualizado' });
   } catch (err) { next(err); }
 }

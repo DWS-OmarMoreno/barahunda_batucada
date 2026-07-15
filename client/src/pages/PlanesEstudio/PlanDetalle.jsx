@@ -235,7 +235,7 @@ function TabEstructura({ plan, onRefresh, onNotificarItem }) {
 
   function abrirCrearItem(seccionId) {
     setModalItem({ seccionId, item: null });
-    setFormItem({ titulo: '', tipo: 'ACTIVIDAD', ponderado: '', fecha_limite: '' });
+    setFormItem({ titulo: '', descripcion: '', url_recurso: '', tipo: 'ACTIVIDAD', ponderado: '', fecha_limite: '' });
     setErrorItem('');
   }
 
@@ -243,6 +243,8 @@ function TabEstructura({ plan, onRefresh, onNotificarItem }) {
     setModalItem({ seccionId, item });
     setFormItem({
       titulo: item.titulo,
+      descripcion: item.descripcion || '',
+      url_recurso: item.url_recurso || '',
       tipo: item.tipo,
       ponderado: item.ponderado ?? '',
       fecha_limite: item.fecha_limite ? item.fecha_limite.slice(0, 10) : '',
@@ -260,6 +262,8 @@ function TabEstructura({ plan, onRefresh, onNotificarItem }) {
     try {
       const payload = {
         titulo: formItem.titulo.trim(),
+        descripcion: formItem.descripcion.trim() || null,
+        url_recurso: formItem.url_recurso.trim() || null,
         tipo: formItem.tipo,
         ponderado: esNumerica && formItem.ponderado !== '' ? Number(formItem.ponderado) : null,
         fecha_limite: formItem.fecha_limite || null,
@@ -451,6 +455,22 @@ function TabEstructura({ plan, onRefresh, onNotificarItem }) {
             value={formItem.titulo}
             onChange={(e) => setFormItem((p) => ({ ...p, titulo: e.target.value }))}
             required
+          />
+          <FormField
+            label="Descripción (visible para el miembro)"
+            type="textarea"
+            name="descripcion"
+            value={formItem.descripcion}
+            onChange={(e) => setFormItem((p) => ({ ...p, descripcion: e.target.value }))}
+            helpText="Explica qué debe hacer el estudiante en esta actividad."
+          />
+          <FormField
+            label="Enlace a recursos (opcional)"
+            name="url_recurso"
+            value={formItem.url_recurso}
+            onChange={(e) => setFormItem((p) => ({ ...p, url_recurso: e.target.value }))}
+            placeholder="https://drive.google.com/..."
+            helpText="Link a Drive, YouTube, Notion u otro recurso para el estudiante."
           />
           <FormField
             label="Tipo"

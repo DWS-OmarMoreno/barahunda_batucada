@@ -161,7 +161,7 @@ async function obtenerItem(itemId) {
   return item || null;
 }
 
-async function crearItem({ planId, seccionId, titulo, descripcion, tipo, ponderado, fechaLimite }) {
+async function crearItem({ planId, seccionId, titulo, descripcion, urlRecurso, tipo, ponderado, fechaLimite }) {
   // Auto-asignar orden dentro de la sección (o plan si sin sección)
   let maxRow;
   if (seccionId) {
@@ -178,23 +178,24 @@ async function crearItem({ planId, seccionId, titulo, descripcion, tipo, pondera
   const orden = maxRow.maxOrden + 1;
 
   const [res] = await pool.query(
-    `INSERT INTO plan_items (plan_id, seccion_id, titulo, descripcion, tipo, orden, ponderado, fecha_limite)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [planId, seccionId || null, titulo, descripcion || null,
+    `INSERT INTO plan_items (plan_id, seccion_id, titulo, descripcion, url_recurso, tipo, orden, ponderado, fecha_limite)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [planId, seccionId || null, titulo, descripcion || null, urlRecurso || null,
       tipo || 'ACTIVIDAD', orden, ponderado ?? null, fechaLimite || null]
   );
   return obtenerItem(res.insertId);
 }
 
-async function actualizarItem(itemId, { titulo, descripcion, tipo, seccionId, ponderado, fechaLimite }) {
+async function actualizarItem(itemId, { titulo, descripcion, urlRecurso, tipo, seccionId, ponderado, fechaLimite }) {
   const item = await obtenerItem(itemId);
   if (!item) throw Object.assign(new Error('Ítem no encontrado'), { status: 404 });
   await pool.query(
     `UPDATE plan_items
-     SET titulo = ?, descripcion = ?, tipo = ?, seccion_id = ?, ponderado = ?, fecha_limite = ?
+     SET titulo = ?, descripcion = ?, url_recurso = ?, tipo = ?, seccion_id = ?, ponderado = ?, fecha_limite = ?
      WHERE id = ?`,
     [titulo ?? item.titulo,
       descripcion !== undefined ? (descripcion || null) : item.descripcion,
+      urlRecurso !== undefined ? (urlRecurso || null) : item.url_recurso,
       tipo ?? item.tipo,
       seccionId !== undefined ? (seccionId || null) : item.seccion_id,
       ponderado !== undefined ? (ponderado ?? null) : item.ponderado,

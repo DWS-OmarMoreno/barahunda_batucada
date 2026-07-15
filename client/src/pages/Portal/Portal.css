@@ -1159,6 +1159,29 @@
   color: var(--color-secondary);
 }
 
+.mistarea__item-desc {
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 4px 0 2px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.mistarea__item-recurso {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+
+.mistarea__item-recurso:hover {
+  text-decoration: underline;
+}
+
 .mistarea__item-bloqueado-hint {
   font-size: 12px;
   color: var(--color-secondary);
