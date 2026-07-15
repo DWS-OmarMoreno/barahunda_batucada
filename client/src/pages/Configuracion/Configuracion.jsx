@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme, COLORES_POR_DEFECTO } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   actualizarConfiguracion,
   subirLogo,
@@ -12,6 +13,7 @@ import Button from '../../components/ui/Button';
 import UploadField from '../../components/ui/UploadField';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import AuditLog from '../../components/ui/AuditLog';
+import SeccionBD from './SeccionBD';
 import './Configuracion.css';
 
 // Lista de zonas horarias más comunes en Latinoamérica + algunas globales
@@ -45,6 +47,7 @@ const CAMPOS_COLOR = [
 
 export default function Configuracion() {
   const { config, recargarConfiguracion, previsualizarColores } = useTheme();
+  const { usuario } = useAuth();
 
   const [datosGenerales, setDatosGenerales] = useState({
     escuela_nombre: '',
@@ -468,6 +471,9 @@ export default function Configuracion() {
         <h2>Auditoría</h2>
         <AuditLog registros={auditoria} cargando={cargandoAuditoria} />
       </section>
+
+      {/* BD MANAGEMENT — solo super admin (el backend también lo verifica) */}
+      {usuario?.rol === 'ADMIN' && <SeccionBD />}
 
       <ConfirmDialog
         abierto={mostrarConfirmReset}

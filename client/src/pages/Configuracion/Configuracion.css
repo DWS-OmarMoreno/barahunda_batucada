@@ -92,3 +92,329 @@
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+/* ── SeccionBD ─────────────────────────────────────────────────────────────── */
+
+.bd__seccion {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.bd__collapse-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  transition: background 0.15s;
+}
+
+.bd__collapse-hdr:hover {
+  background: var(--color-hover, rgba(0,0,0,0.03));
+}
+
+.bd__collapse-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bd__collapse-icono {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.bd__collapse-h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: var(--color-text);
+}
+
+.bd__collapse-sub {
+  font-size: 12px;
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.bd__collapse-chev {
+  font-size: 12px;
+  color: var(--color-secondary);
+  flex-shrink: 0;
+}
+
+.bd__contenido {
+  padding: 0 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.bd__advertencia {
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--color-text);
+  margin-top: 14px;
+}
+
+.bd__acciones-top {
+  display: flex;
+  gap: 8px;
+}
+
+.bd__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Fila de resumen ─────────────────────────────────────────────────────── */
+
+.bd__fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: background 0.12s;
+}
+
+.bd__fila:hover {
+  background: var(--color-hover, rgba(0,0,0,0.02));
+}
+
+.bd__fila-icono {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.bd__fila-nombre {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.bd__fila-count {
+  font-size: 12px;
+  color: var(--color-secondary);
+  background: var(--color-surface-alt, rgba(0,0,0,0.04));
+  border-radius: 10px;
+  padding: 2px 10px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.bd__fila-count--has {
+  background: rgba(59,130,246,0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.bd__fila-ver {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-primary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.bd__fila-ver:hover {
+  background: rgba(59,130,246,0.08);
+}
+
+/* ── Modal de tabla ──────────────────────────────────────────────────────── */
+
+.bd__modal-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 200px;
+}
+
+.bd__modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.bd__modal-total {
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.bd__modal-footer-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.bd__tabla-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 55vh;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.bd__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.bd__tabla th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-alt, #f8f9fa);
+  color: var(--color-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  text-align: left;
+}
+
+.bd__tabla td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-border);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.bd__tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.bd__tabla tr:hover td {
+  background: var(--color-hover, rgba(0,0,0,0.02));
+}
+
+.bd__th-accion,
+.bd__td-accion {
+  width: 44px;
+  text-align: center !important;
+}
+
+.bd__btn-eliminar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  transition: background 0.12s;
+  line-height: 1;
+}
+
+.bd__btn-eliminar:hover:not(:disabled) {
+  background: rgba(239,68,68,0.1);
+}
+
+.bd__btn-eliminar:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.bd__celda-null {
+  color: var(--color-secondary);
+  opacity: 0.5;
+}
+
+.bd__celda-bool {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 2px 7px;
+}
+
+.bd__celda-bool--si {
+  background: rgba(34,197,94,0.12);
+  color: var(--color-success, #22c55e);
+}
+
+.bd__celda-bool--no {
+  background: rgba(107,114,128,0.1);
+  color: var(--color-secondary);
+}
+
+/* ── Paginación ──────────────────────────────────────────────────────────── */
+
+.bd__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.bd__pag-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-primary);
+  transition: background 0.12s;
+}
+
+.bd__pag-btn:hover:not(:disabled) {
+  background: rgba(59,130,246,0.06);
+}
+
+.bd__pag-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bd__pag-info {
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+/* ── Estados ─────────────────────────────────────────────────────────────── */
+
+.bd__cargando,
+.bd__vacio {
+  font-size: 13px;
+  color: var(--color-secondary);
+  text-align: center;
+  padding: 24px 0;
+}
+
+.bd__error {
+  font-size: 13px;
+  color: var(--color-danger);
+  margin: 0;
+}
+
+/* Ampliar modal xl para la tabla */
+.modal--xl {
+  max-width: min(95vw, 1100px);
+  width: 95vw;
+}
