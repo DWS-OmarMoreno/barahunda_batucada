@@ -865,3 +865,53 @@
     width: 100%;
   }
 }
+
+/* ── Notificaciones ─────────────────────────────────────────────────────────── */
+
+.planes-det__notif-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.planes-det__notif-link {
+  display: block;
+  padding: 8px 12px;
+  background: rgba(37,211,102,0.08);
+  border: 1px solid rgba(37,211,102,0.25);
+  border-radius: 8px;
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 13px;
+  transition: background 0.12s;
+}
+
+.planes-det__notif-link:hover {
+  background: rgba(37,211,102,0.16);
+}
+
+.planes-det__btn-link {
+  background: none;
+  border: none;
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+  transition: color 0.12s;
+}
+
+.planes-det__btn-link:hover {
+  color: color-mix(in srgb, var(--color-primary) 80%, #000);
+}
+
+.planes-det__btn-link--danger {
+  color: var(--color-danger);
+}
+
+.planes-det__btn-link--danger:hover {
+  color: color-mix(in srgb, var(--color-danger) 80%, #000);
+}

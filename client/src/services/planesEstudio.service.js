@@ -39,3 +39,8 @@ export const exportarReporte = async (planId, formato = 'excel') => {
 // ── Portal ────────────────────────────────────────────────────────────────
 export const obtenerMiPlan = () => api.get('/portal/mi-plan').then((r) => r.data);
 export const entregarItem = (datos) => api.post('/portal/entregar-item', datos).then((r) => r.data);
+
+// ── Notificaciones (admin) ────────────────────────────────────────────────
+export const notificarPlan = (planId, datos) => api.post(`/planes-estudio/${planId}/notificar`, datos).then((r) => r.data);
+export const notificarItem = (planId, itemId, datos) => api.post(`/planes-estudio/${planId}/items/${itemId}/notificar`, datos).then((r) => r.data);
+export const eliminarEntregaPlan = (planId, entregaId) => api.delete(`/planes-estudio/${planId}/entregas/${entregaId}`).then((r) => r.data);

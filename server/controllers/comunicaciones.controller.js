@@ -3,6 +3,7 @@ const { ok, fail } = require('../utils/respuesta');
 const { obtenerParametros, construirPaginacion } = require('../utils/paginacion');
 const { reemplazarVariables, construirUrlWhatsApp } = require('../utils/whatsapp');
 const { formatearMoneda } = require('../utils/formato');
+const emailUtil = require('../utils/email');
 
 const comunicacionesModel = require('../models/comunicaciones.model');
 const plantillasModel = require('../models/plantillas.model');
@@ -10,6 +11,7 @@ const nivelesModel = require('../models/niveles.model');
 
 const MODULO = 'COMUNICACIONES';
 const TIPOS_VALIDOS = ['TODOS', 'POR_NIVEL', 'MANUAL'];
+const CANALES_VALIDOS = ['WHATSAPP', 'EMAIL', 'AMBOS'];
 
 async function listar(req, res, next) {
   try {
@@ -27,7 +29,8 @@ async function listar(req, res, next) {
 
 async function enviar(req, res, next) {
   try {
-    const { plantilla_id, destinatarios_tipo, nivel_id, miembro_ids, variables_extra } = req.body || {};
+    const { plantilla_id, destinatarios_tipo, nivel_id, miembro_ids, variables_extra, canal: canalRaw } = req.body || {};
+    const canal = CANALES_VALIDOS.includes(canalRaw) ? canalRaw : 'WHATSAPP';
 
     if (!plantilla_id) return fail(res, { message: 'plantilla_id es obligatorio', status: 400 });
     if (!TIPOS_VALIDOS.includes(destinatarios_tipo)) {
@@ -60,16 +63,33 @@ async function enviar(req, res, next) {
         ...(variables_extra || {}),
       };
       const mensaje = reemplazarVariables(plantilla.contenido, variables);
-      const url = d.whatsapp ? construirUrlWhatsApp(d.whatsapp, mensaje) : null;
+      const url = (canal === 'WHATSAPP' || canal === 'AMBOS') && d.whatsapp
+        ? construirUrlWhatsApp(d.whatsapp, mensaje)
+        : null;
 
       return {
         miembro_id: d.miembro_id,
         miembro_nombre: d.miembro_nombre,
         whatsapp: d.whatsapp || null,
+        email: d.email || null,
         mensaje,
         url,
+        canal,
       };
     });
+
+    // Envío por email si aplica
+    if (canal === 'EMAIL' || canal === 'AMBOS') {
+      const asunto = plantilla.nombre || 'Mensaje de la escuela';
+      for (const m of mensajes) {
+        if (m.email) {
+          await emailUtil.enviarMensaje(
+            { email: m.email, nombre: m.miembro_nombre },
+            { asunto, cuerpo: m.mensaje }
+          ).catch(() => {}); // silencioso para no bloquear la respuesta
+        }
+      }
+    }
 
     const comunicacion = await comunicacionesModel.crear({
       plantilla_id,
@@ -78,6 +98,7 @@ async function enviar(req, res, next) {
       mensaje_generado: plantilla.contenido,
       total_destinatarios: mensajes.length,
       enviado_por: req.usuario ? req.usuario.id : null,
+      canal,
     });
 
     if (req.auditoria) {

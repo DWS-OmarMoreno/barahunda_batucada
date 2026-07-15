@@ -17,6 +17,9 @@ import {
   calificarEntrega,
   obtenerReporte,
   exportarReporte,
+  eliminarEntregaPlan,
+  notificarPlan,
+  notificarItem,
 } from '../../services/planesEstudio.service';
 import Tabs from '../../components/ui/Tabs';
 import Button from '../../components/ui/Button';
@@ -58,9 +61,103 @@ function CalifBadge({ tipo }) {
   return <StatusBadge texto={texto} variant={variant} />;
 }
 
+// ─── Modal Notificar ───────────────────────────────────────────────────────────
+
+function ModalNotificar({ tipo, planId, itemId, itemTitulo, onClose }) {
+  const [canal, setCanal] = useState('WHATSAPP');
+  const [cargando, setCargando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState('');
+
+  async function enviar() {
+    setCargando(true);
+    setError('');
+    try {
+      const r = tipo === 'plan'
+        ? await notificarPlan(planId, { canal })
+        : await notificarItem(planId, itemId, { canal });
+      setResultado(r.data ?? r);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Error al notificar');
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  const titulo = tipo === 'plan' ? 'Notificar plan' : `Notificar: ${itemTitulo}`;
+  const destinatariosConEmail = (resultado ?? []).filter((d) => d.email).length;
+
+  return (
+    <Modal
+      abierto
+      titulo={`🔔 ${titulo}`}
+      onClose={onClose}
+      footer={
+        resultado
+          ? <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+          : (
+            <>
+              <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+              <Button loading={cargando} onClick={enviar}>Notificar</Button>
+            </>
+          )
+      }
+    >
+      {!resultado ? (
+        <div className="planes-det__form">
+          <FormField
+            label="Canal de envío"
+            type="select"
+            name="canal"
+            value={canal}
+            onChange={(e) => setCanal(e.target.value)}
+            options={[
+              { value: 'WHATSAPP', label: '💬 WhatsApp (generar links)' },
+              { value: 'EMAIL', label: '📧 Email (envío automático)' },
+              { value: 'AMBOS', label: '💬📧 WhatsApp + Email' },
+            ]}
+          />
+          {error && <p className="planes-det__error">{error}</p>}
+        </div>
+      ) : (
+        <div>
+          <p style={{ marginBottom: 10 }}>
+            <strong>{resultado.length}</strong> destinatario(s) procesados.
+          </p>
+          {(canal === 'EMAIL' || canal === 'AMBOS') && (
+            <p style={{ color: 'var(--color-success)', marginBottom: 10 }}>
+              ✅ Emails enviados a {destinatariosConEmail} miembro(s) con correo registrado.
+            </p>
+          )}
+          {(canal === 'WHATSAPP' || canal === 'AMBOS') && (
+            <div className="planes-det__notif-lista">
+              {resultado.filter((d) => d.url_whatsapp).map((d) => (
+                <a
+                  key={d.miembro_id}
+                  href={d.url_whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="planes-det__notif-link"
+                >
+                  💬 {d.nombre}
+                </a>
+              ))}
+              {resultado.every((d) => !d.url_whatsapp) && (
+                <p style={{ color: 'var(--color-secondary)', fontSize: 13 }}>
+                  Ningún destinatario tiene número de WhatsApp registrado.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 // ─── Tab Estructura ────────────────────────────────────────────────────────────
 
-function TabEstructura({ plan, onRefresh }) {
+function TabEstructura({ plan, onRefresh, onNotificarItem }) {
   const secciones = plan.secciones ?? [];
   const esNumerica = plan.tipo_calificacion === 'NUMERICA';
 
@@ -316,6 +413,11 @@ function TabEstructura({ plan, onRefresh }) {
                       onClick={() => abrirEditarItem(sec.id, item)}
                     >Editar</button>
                     <button
+                      className="planes-det__btn-link"
+                      onClick={() => onNotificarItem && onNotificarItem(item)}
+                      title="Notificar miembros sobre este ítem"
+                    >🔔</button>
+                    <button
                       className="planes-det__btn-link planes-det__btn-link--danger"
                       onClick={() => setConfirmEliminar({ tipo: 'item', id: item.id, nombre: item.titulo })}
                     >Eliminar</button>
@@ -409,6 +511,7 @@ function TabHistorial({ plan }) {
   const [valores, setValores] = useState({});
   const [calificando, setCalificando] = useState({});
   const [exito, setExito] = useState({});
+  const [confirmEliminarEntrega, setConfirmEliminarEntrega] = useState(null); // entrega id
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -449,6 +552,15 @@ function TabHistorial({ plan }) {
     setValores((p) => ({ ...p, [eid]: { ...p[eid], [campo]: v } }));
   }
 
+  async function confirmarEliminarEntrega() {
+    if (!confirmEliminarEntrega) return;
+    try {
+      await eliminarEntregaPlan(plan.id, confirmEliminarEntrega);
+      setConfirmEliminarEntrega(null);
+      cargar();
+    } catch { setConfirmEliminarEntrega(null); }
+  }
+
   async function guardarCalif(eid) {
     setCalificando((p) => ({ ...p, [eid]: true }));
     try {
@@ -482,6 +594,15 @@ function TabHistorial({ plan }) {
       <p className="planes-det__hist-total">
         <strong>{totalEntregas}</strong> entrega{totalEntregas !== 1 ? 's' : ''} en total
       </p>
+
+      <ConfirmDialog
+        abierto={!!confirmEliminarEntrega}
+        titulo="Eliminar entrega"
+        mensaje="¿Eliminar esta entrega? Esta acción no se puede deshacer."
+        onConfirmar={confirmarEliminarEntrega}
+        onCancelar={() => setConfirmEliminarEntrega(null)}
+        textoConfirmar="Eliminar"
+      />
 
       {historialSecciones.map((sec) => (
         <div key={sec.id} className="planes-det__hist-seccion">
@@ -517,6 +638,12 @@ function TabHistorial({ plan }) {
                             </span>
                           </div>
                           <div className="planes-det__entrega-estado">
+                            <button
+                              className="planes-det__btn-ghost planes-det__btn-ghost--danger"
+                              title="Eliminar entrega"
+                              onClick={() => setConfirmEliminarEntrega(e.id)}
+                              style={{ fontSize: 13 }}
+                            >🗑</button>
                             {e.calificacion != null && (
                               <span className="planes-det__entrega-nota">{e.calificacion}</span>
                             )}
@@ -759,6 +886,7 @@ export default function PlanDetalle() {
   const [guardandoPlan, setGuardandoPlan] = useState(false);
 
   const [confirmAccion, setConfirmAccion] = useState(null); // 'activar' | 'desactivar'
+  const [modalNotificar, setModalNotificar] = useState(null); // { tipo: 'plan'|'item', itemId?, itemTitulo? }
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -858,6 +986,7 @@ export default function PlanDetalle() {
           </div>
         </div>
         <div className="planes-det__header-right">
+          <Button variant="secondary" onClick={() => setModalNotificar({ tipo: 'plan' })}>🔔 Notificar</Button>
           <Button variant="secondary" onClick={() => setEditandoPlan(true)}>Editar plan</Button>
           {plan.activo
             ? <Button variant="secondary" onClick={() => setConfirmAccion('desactivar')}>Desactivar</Button>
@@ -869,7 +998,13 @@ export default function PlanDetalle() {
       <Tabs pestanas={PESTANAS} activa={tabActiva} onChange={setTabActiva} />
 
       <div className="planes-det__contenido">
-        {tabActiva === 'estructura' && <TabEstructura plan={plan} onRefresh={cargar} />}
+        {tabActiva === 'estructura' && (
+          <TabEstructura
+            plan={plan}
+            onRefresh={cargar}
+            onNotificarItem={(item) => setModalNotificar({ tipo: 'item', itemId: item.id, itemTitulo: item.titulo })}
+          />
+        )}
         {tabActiva === 'historial' && <TabHistorial plan={plan} />}
         {tabActiva === 'reporte' && <TabReporte plan={plan} />}
       </div>
@@ -947,6 +1082,17 @@ export default function PlanDetalle() {
         onCancelar={() => setConfirmAccion(null)}
         textoConfirmar={confirmAccion === 'activar' ? 'Activar' : 'Desactivar'}
       />
+
+      {/* Modal notificar (plan o ítem) */}
+      {modalNotificar && (
+        <ModalNotificar
+          tipo={modalNotificar.tipo}
+          planId={plan.id}
+          itemId={modalNotificar.itemId}
+          itemTitulo={modalNotificar.itemTitulo}
+          onClose={() => setModalNotificar(null)}
+        />
+      )}
     </div>
   );
 }

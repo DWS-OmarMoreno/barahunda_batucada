@@ -19,8 +19,12 @@ router.post('/guias', c.crearGuia);
 router.put('/guias/:id', c.actualizarGuia);
 router.patch('/guias/:id/toggle', c.toggleGuia);
 
-// Entregas (vista admin: listar + calificar)
+// Entregas (vista admin: listar + calificar + eliminar)
 router.get('/entregas', c.listarEntregas);
 router.patch('/entregas/:id/calificar', c.calificarEntrega);
+router.delete('/entregas/:id', c.eliminarEntrega);
+
+// Notificaciones de tareas
+router.post('/tareas/:id/notificar', c.notificarTarea);
 
 module.exports = router;

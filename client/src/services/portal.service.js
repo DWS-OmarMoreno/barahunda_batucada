@@ -34,3 +34,13 @@ export async function enviarEntrega({ tarea_id, url_evidencia, observaciones }) 
   const { data } = await api.post('/portal/entregar', { tarea_id, url_evidencia, observaciones });
   return data;
 }
+
+export async function obtenerMisAsistenciasFull(params = {}) {
+  const { data } = await api.get('/portal/mis-asistencias-full', { params });
+  return data;
+}
+
+export async function editarEntrega(id, datos) {
+  const { data } = await api.patch(`/portal/entregas/${id}`, datos);
+  return data;
+}

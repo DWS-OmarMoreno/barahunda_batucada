@@ -161,8 +161,74 @@ async function calificarEntrega(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// DELETE /api/escuela/entregas/:id — admin elimina cualquier entrega
+async function eliminarEntrega(req, res, next) {
+  try {
+    const { pool } = require('../config/db');
+    const [[row]] = await pool.query('SELECT id FROM entregas WHERE id = ?', [req.params.id]);
+    if (!row) return fail(res, { message: 'Entrega no encontrada', status: 404 });
+    await pool.query('DELETE FROM entregas WHERE id = ?', [req.params.id]);
+    return ok(res, { data: null, message: 'Entrega eliminada' });
+  } catch (err) { next(err); }
+}
+
+// POST /api/escuela/tareas/:id/notificar — genera links WhatsApp o envía email
+async function notificarTarea(req, res, next) {
+  try {
+    const { canal = 'WHATSAPP', nivel_id } = req.body || {};
+    const { pool } = require('../config/db');
+    const { reemplazarVariables, construirUrlWhatsApp } = require('../utils/whatsapp');
+    const emailUtil = require('../utils/email');
+
+    const [[tarea]] = await pool.query(
+      'SELECT t.*, n.nombre AS nivel_nombre FROM tareas t JOIN niveles n ON n.id = t.nivel_id WHERE t.id = ?',
+      [req.params.id]
+    );
+    if (!tarea) return fail(res, { message: 'Tarea no encontrada', status: 404 });
+
+    const nivelFiltro = nivel_id || tarea.nivel_id;
+    const [miembros] = await pool.query(
+      `SELECT m.id, m.nombres_completos, m.whatsapp, m.email
+       FROM miembros m
+       JOIN miembro_niveles mn ON mn.miembro_id = m.id AND mn.nivel_id = ? AND mn.activo = 1
+       WHERE m.activo = 1`,
+      [nivelFiltro]
+    );
+
+    const mensaje = `Hola {nombre}, tienes una nueva tarea: "${tarea.titulo}"${tarea.fecha_limite ? ` (fecha límite: ${tarea.fecha_limite.toISOString?.().slice(0, 10) ?? tarea.fecha_limite})` : ''}. ¡Mucho éxito!`;
+
+    const destinatarios = miembros.map((m) => {
+      const texto = reemplazarVariables(mensaje, { nombre: m.nombres_completos });
+      return {
+        miembro_id: m.id,
+        nombre: m.nombres_completos,
+        whatsapp: m.whatsapp,
+        email: m.email,
+        mensaje: texto,
+        url_whatsapp: (canal === 'WHATSAPP' || canal === 'AMBOS') && m.whatsapp
+          ? construirUrlWhatsApp(m.whatsapp, texto)
+          : null,
+      };
+    });
+
+    if (canal === 'EMAIL' || canal === 'AMBOS') {
+      for (const d of destinatarios) {
+        if (d.email) {
+          await emailUtil.enviarConPlantilla('notificacion_general', { email: d.email, nombre: d.nombre }, {
+            titulo: tarea.titulo,
+            descripcion: tarea.descripcion || '',
+            fecha_limite: tarea.fecha_limite ? String(tarea.fecha_limite).slice(0, 10) : 'Sin fecha límite',
+          }).catch(() => {});
+        }
+      }
+    }
+
+    return ok(res, { data: destinatarios, message: `Notificación generada para ${destinatarios.length} miembros` });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   listarTareas, obtenerTarea, crearTarea, actualizarTarea, toggleTarea,
   listarGuias, obtenerGuia, crearGuia, actualizarGuia, toggleGuia,
-  listarEntregas, calificarEntrega,
+  listarEntregas, calificarEntrega, eliminarEntrega, notificarTarea,
 };

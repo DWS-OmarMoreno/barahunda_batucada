@@ -291,6 +291,7 @@ function TabEnviar({ plantillas, niveles, miembros }) {
   const [miembroIds, setMiembroIds] = useState([]);
   const [busquedaMiembro, setBusquedaMiembro] = useState('');
   const [variablesExtra, setVariablesExtra] = useState(FORM_VARIABLES_VACIO);
+  const [canal, setCanal] = useState('WHATSAPP');
 
   const [generando, setGenerando] = useState(false);
   const [resultado, setResultado] = useState(null); // { comunicacion, mensajes }
@@ -335,6 +336,7 @@ function TabEnviar({ plantillas, niveles, miembros }) {
         nivel_id: destinatariosTipo === 'POR_NIVEL' ? nivelId : undefined,
         miembro_ids: destinatariosTipo === 'MANUAL' ? miembroIds.map(Number) : undefined,
         variables_extra: extra,
+        canal,
       });
       setResultado(respuesta.data);
     } catch (err) {
@@ -421,6 +423,19 @@ function TabEnviar({ plantillas, niveles, miembros }) {
             </div>
           )}
 
+          <FormField
+            label="Canal de envío"
+            type="select"
+            name="canal"
+            value={canal}
+            onChange={(e) => setCanal(e.target.value)}
+            options={[
+              { value: 'WHATSAPP', label: '💬 WhatsApp' },
+              { value: 'EMAIL', label: '📧 Email' },
+              { value: 'AMBOS', label: '💬📧 WhatsApp + Email' },
+            ]}
+          />
+
           <div className="comunicaciones__variables-extra">
             <span className="comunicaciones__preview-etiqueta">Variables adicionales (opcional)</span>
             <FormField label="Mes pendiente" name="mes_pendiente" value={variablesExtra.mes_pendiente} onChange={(e) => setVariablesExtra((p) => ({ ...p, mes_pendiente: e.target.value }))} placeholder="Ej: Junio" />
@@ -430,7 +445,9 @@ function TabEnviar({ plantillas, niveles, miembros }) {
 
           {error && <p className="comunicaciones__error">{error}</p>}
 
-          <Button onClick={generar} loading={generando}>Generar enlaces de WhatsApp</Button>
+          <Button onClick={generar} loading={generando}>
+            {canal === 'EMAIL' ? '📧 Enviar emails' : canal === 'AMBOS' ? '💬📧 Enviar WhatsApp + Email' : '💬 Generar enlaces WhatsApp'}
+          </Button>
         </div>
 
         <div className="comunicaciones__envio-resultado">
@@ -438,23 +455,32 @@ function TabEnviar({ plantillas, niveles, miembros }) {
             <>
               <div className="comunicaciones__resultado-header">
                 <span>{resultado.mensajes.length} mensaje(s) generado(s)</span>
-                <Button variant="secondary" onClick={abrirTodos}>Abrir todos</Button>
+                {(canal === 'WHATSAPP' || canal === 'AMBOS') && resultado.mensajes.some((m) => m.url) && (
+                  <Button variant="secondary" onClick={abrirTodos}>Abrir todos</Button>
+                )}
               </div>
-              <div className="comunicaciones__resultado-lista">
-                {resultado.mensajes.map((m) => (
-                  <div key={m.miembro_id} className="comunicaciones__resultado-item">
-                    <div className="comunicaciones__resultado-info">
-                      <strong>{m.miembro_nombre}</strong>
-                      <p className="comunicaciones__preview-corta">{m.mensaje}</p>
-                      {!m.whatsapp && <StatusBadge texto="Sin WhatsApp" variant="warning" />}
+              {(canal === 'EMAIL' || canal === 'AMBOS') && (
+                <p className="comunicaciones__email-enviado">
+                  ✅ Emails enviados a {resultado.mensajes.filter((m) => m.email).length} miembro(s) con correo registrado.
+                </p>
+              )}
+              {(canal === 'WHATSAPP' || canal === 'AMBOS') && (
+                <div className="comunicaciones__resultado-lista">
+                  {resultado.mensajes.map((m) => (
+                    <div key={m.miembro_id} className="comunicaciones__resultado-item">
+                      <div className="comunicaciones__resultado-info">
+                        <strong>{m.miembro_nombre}</strong>
+                        <p className="comunicaciones__preview-corta">{m.mensaje}</p>
+                        {!m.whatsapp && <StatusBadge texto="Sin WhatsApp" variant="warning" />}
+                      </div>
+                      {m.url && <WhatsAppButton numero={m.whatsapp} mensaje={m.mensaje}>Enviar</WhatsAppButton>}
                     </div>
-                    {m.url && <WhatsAppButton numero={m.whatsapp} mensaje={m.mensaje}>Enviar</WhatsAppButton>}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
-            <p className="comunicaciones__resultado-vacio">Selecciona una plantilla y destinatarios, luego genera los enlaces.</p>
+            <p className="comunicaciones__resultado-vacio">Selecciona plantilla, destinatarios y canal, luego genera.</p>
           )}
         </div>
       </div>
@@ -499,6 +525,7 @@ function TabHistorial() {
           { clave: 'destinatarios_tipo', titulo: 'Destinatarios', render: (f) => ETIQUETAS_TIPO_DESTINATARIO[f.destinatarios_tipo] || f.destinatarios_tipo },
           { clave: 'nivel_nombre', titulo: 'Nivel', render: (f) => f.nivel_nombre || '—' },
           { clave: 'total_destinatarios', titulo: 'Total enviados' },
+          { clave: 'canal', titulo: 'Canal', render: (f) => f.canal || 'WHATSAPP' },
           { clave: 'enviado_por_nombre', titulo: 'Enviado por', render: (f) => f.enviado_por_nombre || '—' },
         ]}
         vacioTexto="Aún no se han enviado comunicaciones."

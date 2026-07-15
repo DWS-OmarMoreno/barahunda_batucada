@@ -125,8 +125,28 @@ export default function PortalInicio() {
   if (cargando) return <p className="portal__cargando">Cargando perfil...</p>;
   if (!perfil) return <p className="portal__error">No se pudo cargar el perfil.</p>;
 
+  // Alerta perfil incompleto
+  const perfilIncompleto = perfil && (!perfil.email || !perfil.fecha_nacimiento);
+  const camposFaltantes = perfil
+    ? [!perfil.email && 'correo electrónico', !perfil.fecha_nacimiento && 'fecha de nacimiento'].filter(Boolean)
+    : [];
+
   return (
     <div className="portal__inicio">
+      {/* Alerta perfil incompleto */}
+      {perfilIncompleto && !editando && (
+        <div className="portal__alerta-perfil">
+          <span style={{ fontSize: 24 }}>⚠️</span>
+          <div className="portal__alerta-perfil-texto">
+            <strong>Completa tu perfil</strong>
+            Falta tu {camposFaltantes.join(' y ')}. Necesitamos esta información para enviarte comunicados.
+          </div>
+          <button type="button" className="portal__alerta-completar-btn" onClick={abrirEdicion}>
+            Completar ahora
+          </button>
+        </div>
+      )}
+
       {/* Banner de bienvenida */}
       <div className="portal__bienvenida">
         <div className="portal__avatar">{inicial}</div>

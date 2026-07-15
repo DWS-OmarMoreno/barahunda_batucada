@@ -1,6 +1,8 @@
 const { ok, fail } = require('../utils/respuesta');
 const model = require('../models/planesEstudio.model');
 const { generarExcel, generarPdf, enviarArchivo } = require('../utils/exportador');
+const { reemplazarVariables, construirUrlWhatsApp } = require('../utils/whatsapp');
+const emailUtil = require('../utils/email');
 
 const MODULO = 'PLANES_ESTUDIO';
 const ETIQUETAS_CAT = { EXCELENTE: 'Excelente', POR_MEJORAR: 'Por mejorar' };
@@ -240,9 +242,124 @@ async function reporte(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ── Notificaciones ─────────────────────────────────────────────────────────
+
+// Helper: obtiene miembros del nivel del plan con whatsapp + email
+async function _miembrosDelPlan(planId) {
+  const { pool } = require('../config/db');
+  const [[plan]] = await pool.query(
+    'SELECT p.*, n.nombre AS nivel_nombre FROM planes_estudio p JOIN niveles n ON n.id = p.nivel_id WHERE p.id = ?',
+    [planId]
+  );
+  if (!plan) return { plan: null, miembros: [] };
+  const [miembros] = await pool.query(
+    `SELECT m.id, m.nombres_completos, m.whatsapp, m.email
+     FROM miembros m
+     JOIN miembro_niveles mn ON mn.miembro_id = m.id AND mn.nivel_id = ? AND mn.activo = 1
+     WHERE m.activo = 1`,
+    [plan.nivel_id]
+  );
+  return { plan, miembros };
+}
+
+// POST /:id/notificar — notifica sobre el plan general
+async function notificarPlan(req, res, next) {
+  try {
+    const { canal = 'WHATSAPP' } = req.body || {};
+    const { plan, miembros } = await _miembrosDelPlan(req.params.id);
+    if (!plan) return fail(res, { message: 'Plan no encontrado', status: 404 });
+
+    const msgTpl = `Hola {nombre}, tienes un plan de estudio activo: "${plan.nombre}" (${plan.nivel_nombre}). ¡Revisa tus actividades pendientes!`;
+
+    const destinatarios = miembros.map((m) => {
+      const texto = reemplazarVariables(msgTpl, { nombre: m.nombres_completos });
+      return {
+        miembro_id: m.id, nombre: m.nombres_completos,
+        whatsapp: m.whatsapp, email: m.email, mensaje: texto,
+        url_whatsapp: (canal === 'WHATSAPP' || canal === 'AMBOS') && m.whatsapp
+          ? construirUrlWhatsApp(m.whatsapp, texto) : null,
+      };
+    });
+
+    if (canal === 'EMAIL' || canal === 'AMBOS') {
+      for (const d of destinatarios) {
+        if (d.email) {
+          await emailUtil.enviarMensaje(
+            { email: d.email, nombre: d.nombre },
+            { asunto: `Plan de estudio: ${plan.nombre}`, cuerpo: d.mensaje }
+          ).catch(() => {});
+        }
+      }
+    }
+
+    return ok(res, { data: destinatarios, message: `Notificación generada para ${destinatarios.length} miembros` });
+  } catch (err) { next(err); }
+}
+
+// POST /:id/items/:itemId/notificar — notifica sobre un ítem específico del plan
+async function notificarItem(req, res, next) {
+  try {
+    const { canal = 'WHATSAPP' } = req.body || {};
+    const { pool } = require('../config/db');
+    const [[item]] = await pool.query(
+      'SELECT pi.*, pe.nombre AS plan_nombre, pe.nivel_id FROM plan_items pi JOIN planes_estudio pe ON pe.id = pi.plan_id WHERE pi.id = ?',
+      [req.params.itemId]
+    );
+    if (!item) return fail(res, { message: 'Ítem no encontrado', status: 404 });
+
+    const [miembros] = await pool.query(
+      `SELECT m.id, m.nombres_completos, m.whatsapp, m.email
+       FROM miembros m
+       JOIN miembro_niveles mn ON mn.miembro_id = m.id AND mn.nivel_id = ? AND mn.activo = 1
+       WHERE m.activo = 1`,
+      [item.nivel_id]
+    );
+
+    const limiteTxt = item.fecha_limite
+      ? ` (fecha límite: ${String(item.fecha_limite).slice(0, 10)})`
+      : '';
+    const msgTpl = `Hola {nombre}, tienes una actividad pendiente: "${item.titulo}"${limiteTxt}. ¡Recuerda entregar a tiempo!`;
+
+    const destinatarios = miembros.map((m) => {
+      const texto = reemplazarVariables(msgTpl, { nombre: m.nombres_completos });
+      return {
+        miembro_id: m.id, nombre: m.nombres_completos,
+        whatsapp: m.whatsapp, email: m.email, mensaje: texto,
+        url_whatsapp: (canal === 'WHATSAPP' || canal === 'AMBOS') && m.whatsapp
+          ? construirUrlWhatsApp(m.whatsapp, texto) : null,
+      };
+    });
+
+    if (canal === 'EMAIL' || canal === 'AMBOS') {
+      for (const d of destinatarios) {
+        if (d.email) {
+          await emailUtil.enviarMensaje(
+            { email: d.email, nombre: d.nombre },
+            { asunto: `Actividad: ${item.titulo}`, cuerpo: d.mensaje }
+          ).catch(() => {});
+        }
+      }
+    }
+
+    return ok(res, { data: destinatarios, message: `Notificación generada para ${destinatarios.length} miembros` });
+  } catch (err) { next(err); }
+}
+
+// DELETE /:id/entregas/:entregaId — admin elimina entrega de un plan item
+async function eliminarEntrega(req, res, next) {
+  try {
+    const { pool } = require('../config/db');
+    const [[row]] = await pool.query('SELECT id FROM entregas WHERE id = ?', [req.params.entregaId]);
+    if (!row) return fail(res, { message: 'Entrega no encontrada', status: 404 });
+    await pool.query('DELETE FROM entregas WHERE id = ?', [req.params.entregaId]);
+    return ok(res, { data: null, message: 'Entrega eliminada' });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   listar, obtener, crear, actualizar, activar, desactivar,
   listarSecciones, crearSeccion, actualizarSeccion, eliminarSeccion, reordenarSecciones,
   listarItems, crearItem, actualizarItem, eliminarItem, reordenarItems,
   historial, calificarEntrega, reporte,
+  notificarPlan, notificarItem, eliminarEntrega,
 };

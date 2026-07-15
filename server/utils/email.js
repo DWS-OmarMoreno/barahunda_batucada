@@ -57,10 +57,23 @@ async function enviarConPlantilla(clave, destinatario, datos) {
   });
 }
 
+// Envía directamente sin plantilla de BD (asunto y cuerpo ya renderizados)
+async function enviarMensaje(destinatario, { asunto, cuerpo }) {
+  if (!destinatario?.email) return;
+  const config = await configuracionModel.obtener({ incluirSecretos: false });
+  const transporter = await obtenerTransporter();
+  await transporter.sendMail({
+    from: config.smtp_from || config.smtp_user,
+    to: destinatario.email,
+    subject: asunto || 'Mensaje de la escuela',
+    html: `<div style="font-family:sans-serif;max-width:600px">${cuerpo.replace(/\n/g, '<br>')}</div>`,
+  });
+}
+
 // Envía directamente sin plantilla (para prueba de conexión)
 async function verificarConexion() {
   const transporter = await obtenerTransporter();
   await transporter.verify();
 }
 
-module.exports = { enviarConPlantilla, verificarConexion, renderizarPlantilla };
+module.exports = { enviarConPlantilla, enviarMensaje, verificarConexion, renderizarPlantilla };

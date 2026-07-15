@@ -34,6 +34,11 @@ router.put('/:id/reordenar', ctrl.reordenarItems);
 // ── Historial y calificaciones ────────────────────────────────────────────
 router.get('/:id/historial', ctrl.historial);
 router.patch('/:id/entregas/:entregaId/calificar', ctrl.calificarEntrega);
+router.delete('/:id/entregas/:entregaId', ctrl.eliminarEntrega);
 router.get('/:id/reporte', ctrl.reporte);
+
+// ── Notificaciones ────────────────────────────────────────────────────────
+router.post('/:id/notificar', ctrl.notificarPlan);
+router.post('/:id/items/:itemId/notificar', ctrl.notificarItem);
 
 module.exports = router;

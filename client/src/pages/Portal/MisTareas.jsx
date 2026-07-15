@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { obtenerMisTareas, enviarEntrega } from '../../services/portal.service';
+import { obtenerMisTareas, enviarEntrega, editarEntrega } from '../../services/portal.service';
 import { obtenerMiPlan, entregarItem } from '../../services/planesEstudio.service';
 import { formatearFecha } from '../../utils/formato';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -46,7 +46,15 @@ function ProgressBar({ value, max }) {
 
 // ─── Item del plan (visual stepper) ───────────────────────────────────────────
 
-function PlanItem({ plan, item, onEntregar }) {
+function itemEditable(item) {
+  if (!item.entrega) return false;
+  if (!item.fecha_limite) return true; // sin límite → siempre editable
+  const limite = new Date(item.fecha_limite);
+  limite.setHours(23, 59, 59, 999);
+  return new Date() <= limite;
+}
+
+function PlanItem({ plan, item, onEntregar, onEditar }) {
   const desbloqueado = item.desbloqueado !== false;
   const entregado = !!item.entrega;
   const notaCalif = califLabel(plan, item);
@@ -83,6 +91,11 @@ function PlanItem({ plan, item, onEntregar }) {
             {item.entrega.retroalimentacion && (
               <p className="mistarea__item-retro">💬 {item.entrega.retroalimentacion}</p>
             )}
+            {itemEditable(item) && (
+              <Button variant="secondary" onClick={() => onEditar(item)} style={{ alignSelf: 'flex-start', marginTop: 4 }}>
+                ✏️ Editar entrega
+              </Button>
+            )}
           </div>
         )}
 
@@ -104,7 +117,7 @@ function PlanItem({ plan, item, onEntregar }) {
 
 // ─── Sección del plan ──────────────────────────────────────────────────────────
 
-function PlanSeccion({ plan, seccion, onEntregar }) {
+function PlanSeccion({ plan, seccion, onEntregar, onEditar }) {
   const [abierta, setAbierta] = useState(true);
   const items = [...(seccion.items ?? [])].sort((a, b) => a.orden - b.orden);
   const totalSec = seccion.total_items ?? items.length;
@@ -128,7 +141,7 @@ function PlanSeccion({ plan, seccion, onEntregar }) {
             <p className="mistarea__vacio-sub">Esta sección no tiene ítems aún.</p>
           )}
           {items.map((item) => (
-            <PlanItem key={item.id} plan={plan} item={item} onEntregar={onEntregar} />
+            <PlanItem key={item.id} plan={plan} item={item} onEntregar={onEntregar} onEditar={onEditar} />
           ))}
         </div>
       )}
@@ -138,7 +151,7 @@ function PlanSeccion({ plan, seccion, onEntregar }) {
 
 // ─── Plan completo ─────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, onEntregar }) {
+function PlanCard({ plan, onEntregar, onEditar }) {
   const secciones = [...(plan.secciones ?? [])].sort((a, b) => a.orden - b.orden);
   const total = plan.total_items ?? 0;
   const entregados = plan.items_entregados ?? 0;
@@ -162,7 +175,7 @@ function PlanCard({ plan, onEntregar }) {
         <p className="mistarea__vacio-sub">Este plan aún no tiene secciones.</p>
       )}
       {secciones.map((sec) => (
-        <PlanSeccion key={sec.id} plan={plan} seccion={sec} onEntregar={onEntregar} />
+        <PlanSeccion key={sec.id} plan={plan} seccion={sec} onEntregar={onEntregar} onEditar={onEditar} />
       ))}
     </div>
   );
@@ -226,6 +239,72 @@ function ModalEntrega({ item, planId, onClose, onExito }) {
           onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))}
           rows={3}
           helpText="Describe lo que hiciste o agrega notas para el profe."
+        />
+        <p className="mistarea__form-hint">* Debes proporcionar al menos un enlace o un comentario.</p>
+        {error && <p className="mistarea__error">{error}</p>}
+      </form>
+    </Modal>
+  );
+}
+
+// ─── Modal editar entrega (plan item) ─────────────────────────────────────────
+
+function ModalEditarEntrega({ item, onClose, onExito }) {
+  const [form, setForm] = useState({
+    url_evidencia: item?.entrega?.url_evidencia || '',
+    observaciones: item?.entrega?.observaciones || '',
+  });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+
+  async function guardar(e) {
+    e.preventDefault();
+    if (!form.url_evidencia.trim() && !form.observaciones.trim()) {
+      return setError('Debes ingresar al menos un enlace o un comentario.');
+    }
+    setGuardando(true);
+    setError('');
+    try {
+      await editarEntrega(item.entrega.id, {
+        url_evidencia: form.url_evidencia || null,
+        observaciones: form.observaciones || null,
+      });
+      onExito();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'No se pudo actualizar la entrega.');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <Modal
+      abierto
+      titulo={`Editar entrega: ${item?.titulo}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button onClick={guardar} loading={guardando}>Guardar cambios</Button>
+        </>
+      }
+    >
+      <form onSubmit={guardar} className="mistarea__form">
+        <FormField
+          label="Enlace de evidencia (URL)"
+          type="url"
+          name="url_evidencia"
+          value={form.url_evidencia}
+          onChange={(e) => setForm((p) => ({ ...p, url_evidencia: e.target.value }))}
+          helpText="Ej: link a Drive, YouTube, Notion, etc."
+        />
+        <FormField
+          label="Comentarios"
+          type="textarea"
+          name="observaciones"
+          value={form.observaciones}
+          onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))}
+          rows={3}
         />
         <p className="mistarea__form-hint">* Debes proporcionar al menos un enlace o un comentario.</p>
         {error && <p className="mistarea__error">{error}</p>}
@@ -369,8 +448,10 @@ export default function MisTareas() {
   const [tareas, setTareas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // Modal plan item
+  // Modal plan item (nueva entrega)
   const [itemSeleccionado, setItemSeleccionado] = useState(null); // { item, planId }
+  // Modal editar entrega plan item
+  const [itemEditando, setItemEditando] = useState(null);
   // Modal tarea standalone
   const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
 
@@ -438,6 +519,7 @@ export default function MisTareas() {
               key={plan.id}
               plan={plan}
               onEntregar={(item) => abrirEntregaItem(item, plan.id)}
+              onEditar={(item) => setItemEditando(item)}
             />
           ))}
         </section>
@@ -458,6 +540,15 @@ export default function MisTareas() {
           planId={itemSeleccionado.planId}
           onClose={cerrarEntregaItem}
           onExito={onExitoItem}
+        />
+      )}
+
+      {/* Modal editar entrega plan item */}
+      {itemEditando && (
+        <ModalEditarEntrega
+          item={itemEditando}
+          onClose={() => setItemEditando(null)}
+          onExito={() => { setItemEditando(null); cargar(); }}
         />
       )}
 

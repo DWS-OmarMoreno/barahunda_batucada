@@ -31,11 +31,11 @@ async function obtenerPorId(id) {
   return rows[0] || null;
 }
 
-async function crear({ plantilla_id, destinatarios_tipo, nivel_id, mensaje_generado, total_destinatarios, enviado_por }) {
+async function crear({ plantilla_id, destinatarios_tipo, nivel_id, mensaje_generado, total_destinatarios, enviado_por, canal }) {
   const [resultado] = await pool.query(
-    `INSERT INTO comunicaciones (plantilla_id, destinatarios_tipo, nivel_id, mensaje_generado, total_destinatarios, enviado_por)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [plantilla_id || null, destinatarios_tipo, nivel_id || null, mensaje_generado, total_destinatarios || 0, enviado_por || null]
+    `INSERT INTO comunicaciones (plantilla_id, destinatarios_tipo, nivel_id, mensaje_generado, total_destinatarios, enviado_por, canal)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [plantilla_id || null, destinatarios_tipo, nivel_id || null, mensaje_generado, total_destinatarios || 0, enviado_por || null, canal || 'WHATSAPP']
   );
   return obtenerPorId(resultado.insertId);
 }
@@ -45,7 +45,7 @@ async function crear({ plantilla_id, destinatarios_tipo, nivel_id, mensaje_gener
 // datos usados para sustituir las variables {nivel} y {valor_mensualidad} de
 // la plantilla. Se usan subconsultas correlacionadas para evitar N+1 queries.
 const SELECT_DESTINATARIO = `
-  SELECT m.id AS miembro_id, m.nombres_completos AS miembro_nombre, m.numero_documento, m.whatsapp,
+  SELECT m.id AS miembro_id, m.nombres_completos AS miembro_nombre, m.numero_documento, m.whatsapp, m.email,
          COALESCE(me.valor_mensualidad, 0) AS valor_mensualidad,
          (SELECT n.nombre FROM miembro_niveles mn
           JOIN niveles n ON n.id = mn.nivel_id
