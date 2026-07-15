@@ -6,7 +6,7 @@ const ctrl = require('../controllers/planesEstudio.controller');
 
 router.use(verifyToken, auditoriaMiddleware);
 
-// Planes
+// ── Planes ────────────────────────────────────────────────────────────────
 router.get('/', ctrl.listar);
 router.post('/', ctrl.crear);
 router.get('/:id', ctrl.obtener);
@@ -14,14 +14,24 @@ router.put('/:id', ctrl.actualizar);
 router.post('/:id/activar', ctrl.activar);
 router.post('/:id/desactivar', ctrl.desactivar);
 
-// Ítems
+// ── Secciones (estático antes que dinámico para evitar conflictos) ────────
+router.get('/:id/secciones', ctrl.listarSecciones);
+router.post('/:id/secciones', ctrl.crearSeccion);
+router.put('/:id/secciones/reordenar', ctrl.reordenarSecciones);       // estático primero
+router.put('/:id/secciones/:seccionId', ctrl.actualizarSeccion);
+router.delete('/:id/secciones/:seccionId', ctrl.eliminarSeccion);
+
+// Crear ítem dentro de una sección (vía URL)
+router.post('/:id/secciones/:seccionId/items', ctrl.crearItem);
+
+// ── Ítems (rutas heredadas, compatibilidad) ───────────────────────────────
 router.get('/:id/items', ctrl.listarItems);
-router.post('/:id/items', ctrl.crearItem);
+router.post('/:id/items', ctrl.crearItem);           // acepta seccion_id en body
 router.put('/:id/items/:itemId', ctrl.actualizarItem);
 router.delete('/:id/items/:itemId', ctrl.eliminarItem);
 router.put('/:id/reordenar', ctrl.reordenarItems);
 
-// Historial y calificaciones
+// ── Historial y calificaciones ────────────────────────────────────────────
 router.get('/:id/historial', ctrl.historial);
 router.patch('/:id/entregas/:entregaId/calificar', ctrl.calificarEntrega);
 router.get('/:id/reporte', ctrl.reporte);

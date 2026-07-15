@@ -898,3 +898,397 @@
   padding-bottom: 6px;
   border-bottom: 1px solid var(--color-border);
 }
+
+/* ── MisTareas ────────────────────────────────────────────────────────────── */
+
+.mistarea {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 760px;
+}
+
+.mistarea__titulo-pag {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.mistarea__cargando,
+.mistarea__vacio {
+  color: var(--color-secondary);
+  font-size: 14px;
+}
+
+.mistarea__vacio-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 52px 20px;
+  color: var(--color-secondary);
+  text-align: center;
+}
+
+.mistarea__vacio-icon {
+  font-size: 40px;
+}
+
+.mistarea__vacio-sub {
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin: 0;
+  padding: 8px 14px;
+}
+
+.mistarea__section-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 12px;
+}
+
+.mistarea__subseccion-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin: 16px 0 8px;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────────── */
+
+.mistarea__progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+  flex: 1;
+}
+
+.mistarea__progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-primary);
+  transition: width 0.4s ease;
+}
+
+.mistarea__progress-fill--done {
+  background: var(--color-success, #22c55e);
+}
+
+/* ── Plan card ───────────────────────────────────────────────────────────── */
+
+.mistarea__plan-card {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.mistarea__plan-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 16px 10px;
+  gap: 10px;
+}
+
+.mistarea__plan-nivel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-primary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.mistarea__plan-titulo {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.mistarea__plan-prog-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mistarea__plan-prog-num span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-secondary);
+}
+
+.mistarea__plan-barra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 14px;
+}
+
+.mistarea__plan-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── Sección del plan ────────────────────────────────────────────────────── */
+
+.mistarea__seccion {
+  border-top: 1px solid var(--color-border);
+}
+
+.mistarea__seccion-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+.mistarea__seccion-hdr:hover {
+  background: var(--color-hover, rgba(0,0,0,0.03));
+}
+
+.mistarea__seccion-icono {
+  font-size: 15px;
+}
+
+.mistarea__seccion-nombre {
+  flex: 1;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.mistarea__seccion-prog {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  min-width: 30px;
+  text-align: right;
+}
+
+.mistarea__seccion-bar {
+  width: 80px;
+}
+
+.mistarea__seccion-chev {
+  font-size: 11px;
+  color: var(--color-secondary);
+}
+
+.mistarea__seccion-items {
+  padding: 0 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Item del plan ───────────────────────────────────────────────────────── */
+
+.mistarea__item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: box-shadow 0.15s;
+}
+
+.mistarea__item--bloqueado {
+  opacity: 0.6;
+  background: var(--color-surface-alt, rgba(0,0,0,0.02));
+}
+
+.mistarea__item--entregado {
+  border-color: var(--color-success, #22c55e);
+  background: rgba(34,197,94,0.03);
+}
+
+.mistarea__item--examen {
+  border-color: var(--color-danger);
+  background: rgba(239,68,68,0.03);
+}
+
+.mistarea__item-icon {
+  font-size: 20px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.mistarea__item-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mistarea__item-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mistarea__item-titulo {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.mistarea__item-fecha {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.mistarea__item-bloqueado-hint {
+  font-size: 12px;
+  color: var(--color-secondary);
+  font-style: italic;
+  margin: 0;
+}
+
+.mistarea__item-entregado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mistarea__item-entregado-label {
+  font-size: 12px;
+  color: var(--color-success, #22c55e);
+}
+
+.mistarea__item-nota {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.mistarea__item-nota--warn {
+  color: var(--color-warning, #f59e0b);
+}
+
+.mistarea__item-retro {
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ── Tareas standalone ───────────────────────────────────────────────────── */
+
+.mistarea__standalone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mistarea__tareas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mistarea__tarea-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+}
+
+.mistarea__tarea-card--entregada {
+  opacity: 0.75;
+}
+
+.mistarea__tarea-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mistarea__tarea-titulo {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.mistarea__tarea-desc {
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.mistarea__tarea-fecha {
+  font-size: 12px;
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.mistarea__tarea-retro {
+  font-size: 13px;
+  color: var(--color-secondary);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Modal de entrega ────────────────────────────────────────────────────── */
+
+.mistarea__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mistarea__form-hint {
+  font-size: 12px;
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.mistarea__error {
+  font-size: 13px;
+  color: var(--color-danger);
+  margin: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .mistarea__plan-hdr {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mistarea__seccion-bar {
+    width: 50px;
+  }
+
+  .mistarea__item {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

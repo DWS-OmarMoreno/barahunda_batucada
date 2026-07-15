@@ -1,13 +1,9 @@
 const { ok, fail } = require('../utils/respuesta');
 const model = require('../models/planesEstudio.model');
 const { generarExcel, generarPdf, enviarArchivo } = require('../utils/exportador');
-const { formatearMoneda } = require('../utils/formato');
 
 const MODULO = 'PLANES_ESTUDIO';
-
-const ETIQUETAS_TIPO = { NUMERICA: 'Numérica', CATEGORICA: 'Categórica', SIMPLE: 'Simple' };
 const ETIQUETAS_CAT = { EXCELENTE: 'Excelente', POR_MEJORAR: 'Por mejorar' };
-const ETIQUETAS_SIMPLE = { ENTREGADO: 'Entregado', NO_ENTREGADO: 'No entregado' };
 
 // ── Planes ────────────────────────────────────────────────────────────────
 
@@ -29,15 +25,10 @@ async function obtener(req, res, next) {
 async function crear(req, res, next) {
   try {
     const { nivel_id, nombre, descripcion, tipo_calificacion, nota_minima_aprobacion, fecha_inicio, fecha_fin } = req.body;
-    if (!nivel_id || !nombre || !tipo_calificacion) {
+    if (!nivel_id || !nombre || !tipo_calificacion)
       return fail(res, { message: 'nivel_id, nombre y tipo_calificacion son obligatorios', status: 400 });
-    }
-    if (!['NUMERICA', 'CATEGORICA', 'SIMPLE'].includes(tipo_calificacion)) {
+    if (!['NUMERICA', 'CATEGORICA', 'SIMPLE'].includes(tipo_calificacion))
       return fail(res, { message: 'tipo_calificacion debe ser NUMERICA, CATEGORICA o SIMPLE', status: 400 });
-    }
-    if (tipo_calificacion === 'NUMERICA' && !nota_minima_aprobacion) {
-      return fail(res, { message: 'nota_minima_aprobacion es obligatoria para planes numéricos', status: 400 });
-    }
     const plan = await model.crear({ nivelId: nivel_id, nombre, descripcion, tipoCalificacion: tipo_calificacion, notaMinimaAprobacion: nota_minima_aprobacion, fechaInicio: fecha_inicio, fechaFin: fecha_fin });
     if (req.auditoria) await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'CREATE', entidadId: plan.id, detalle: { nombre } });
     return ok(res, { data: plan, message: 'Plan creado', status: 201 });
@@ -69,7 +60,49 @@ async function desactivar(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// ── Items ─────────────────────────────────────────────────────────────────
+// ── Secciones ─────────────────────────────────────────────────────────────
+
+async function listarSecciones(req, res, next) {
+  try {
+    const secciones = await model.listarSecciones(req.params.id);
+    return ok(res, { data: secciones, message: 'Secciones obtenidas' });
+  } catch (err) { next(err); }
+}
+
+async function crearSeccion(req, res, next) {
+  try {
+    const { nombre } = req.body;
+    const sec = await model.crearSeccion({ planId: req.params.id, nombre });
+    if (req.auditoria) await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'CREATE_SECCION', entidadId: sec.id, detalle: { nombre } });
+    return ok(res, { data: sec, message: 'Sección creada', status: 201 });
+  } catch (err) { next(err); }
+}
+
+async function actualizarSeccion(req, res, next) {
+  try {
+    const { nombre } = req.body;
+    const sec = await model.actualizarSeccion(req.params.seccionId, { nombre });
+    return ok(res, { data: sec, message: 'Sección actualizada' });
+  } catch (err) { next(err); }
+}
+
+async function eliminarSeccion(req, res, next) {
+  try {
+    await model.eliminarSeccion(req.params.seccionId);
+    return ok(res, { data: null, message: 'Sección eliminada' });
+  } catch (err) { next(err); }
+}
+
+async function reordenarSecciones(req, res, next) {
+  try {
+    const { ordenes } = req.body;
+    if (!Array.isArray(ordenes)) return fail(res, { message: 'ordenes debe ser un array', status: 400 });
+    const secciones = await model.reordenarSecciones(req.params.id, ordenes);
+    return ok(res, { data: secciones, message: 'Secciones reordenadas' });
+  } catch (err) { next(err); }
+}
+
+// ── Ítems ─────────────────────────────────────────────────────────────────
 
 async function listarItems(req, res, next) {
   try {
@@ -80,9 +113,11 @@ async function listarItems(req, res, next) {
 
 async function crearItem(req, res, next) {
   try {
-    const { titulo, descripcion, tipo, orden, ponderado, fecha_limite } = req.body;
+    const { titulo, descripcion, tipo, ponderado, fecha_limite, seccion_id } = req.body;
     if (!titulo) return fail(res, { message: 'El título del ítem es obligatorio', status: 400 });
-    const item = await model.crearItem({ planId: req.params.id, titulo, descripcion, tipo, orden, ponderado, fechaLimite: fecha_limite });
+    // seccionId desde URL (ruta /secciones/:seccionId/items) o desde body
+    const seccionId = req.params.seccionId || seccion_id || null;
+    const item = await model.crearItem({ planId: req.params.id, seccionId, titulo, descripcion, tipo, ponderado, fechaLimite: fecha_limite });
     if (req.auditoria) await req.auditoria.registrarAccion({ modulo: MODULO, accion: 'CREATE_ITEM', entidadId: item.id, detalle: { titulo, tipo } });
     return ok(res, { data: item, message: 'Ítem creado', status: 201 });
   } catch (err) { next(err); }
@@ -90,8 +125,8 @@ async function crearItem(req, res, next) {
 
 async function actualizarItem(req, res, next) {
   try {
-    const { titulo, descripcion, tipo, orden, ponderado, fecha_limite } = req.body;
-    const item = await model.actualizarItem(req.params.itemId, { titulo, descripcion, tipo, orden, ponderado, fechaLimite: fecha_limite });
+    const { titulo, descripcion, tipo, ponderado, fecha_limite, seccion_id } = req.body;
+    const item = await model.actualizarItem(req.params.itemId, { titulo, descripcion, tipo, seccionId: seccion_id, ponderado, fechaLimite: fecha_limite });
     return ok(res, { data: item, message: 'Ítem actualizado' });
   } catch (err) { next(err); }
 }
@@ -105,31 +140,31 @@ async function eliminarItem(req, res, next) {
 
 async function reordenarItems(req, res, next) {
   try {
-    const { ordenes } = req.body; // [{ id, orden }]
+    const { ordenes } = req.body;
     if (!Array.isArray(ordenes)) return fail(res, { message: 'ordenes debe ser un array', status: 400 });
-    const items = await model.reordenarItems(req.params.id, ordenes);
-    return ok(res, { data: items, message: 'Ítems reordenados' });
+    const secciones = await model.reordenarItems(req.params.id, ordenes);
+    return ok(res, { data: secciones, message: 'Ítems reordenados' });
   } catch (err) { next(err); }
 }
 
-// ── Historial de entregas ─────────────────────────────────────────────────
+// ── Historial ─────────────────────────────────────────────────────────────
 
 async function historial(req, res, next) {
   try {
     const plan = await model.obtenerPorId(req.params.id);
     if (!plan) return fail(res, { message: 'Plan no encontrado', status: 404 });
-    const datos = await model.historialEntregas(req.params.id);
-    return ok(res, { data: { plan, items: datos }, message: 'Historial obtenido' });
+    const secciones = await model.historialEntregas(req.params.id);
+    return ok(res, { data: { plan, secciones }, message: 'Historial obtenido' });
   } catch (err) { next(err); }
 }
 
-// Calificar una entrega desde el panel de historial
 async function calificarEntrega(req, res, next) {
   try {
     const { calificacion, calificacion_categorica, retroalimentacion } = req.body;
     const entregaId = req.params.entregaId;
+    const { pool } = require('../config/db');
 
-    const [rows] = await require('../config/db').pool.query(
+    const [rows] = await pool.query(
       `SELECT e.*, pi.plan_id FROM entregas e
        JOIN plan_items pi ON pi.id = e.plan_item_id
        WHERE e.id = ?`,
@@ -146,21 +181,14 @@ async function calificarEntrega(req, res, next) {
 
     if (plan.tipo_calificacion === 'NUMERICA') {
       if (calificacion == null) return fail(res, { message: 'calificacion es obligatoria', status: 400 });
-      sets.push('calificacion = ?');
-      vals.push(calificacion);
+      sets.push('calificacion = ?'); vals.push(calificacion);
     } else if (plan.tipo_calificacion === 'CATEGORICA') {
       if (!calificacion_categorica) return fail(res, { message: 'calificacion_categorica es obligatoria', status: 400 });
-      sets.push('calificacion_categorica = ?');
-      vals.push(calificacion_categorica);
+      sets.push('calificacion_categorica = ?'); vals.push(calificacion_categorica);
     }
-    // SIMPLE: no requiere calificación explícita
 
-    await require('../config/db').pool.query(
-      `UPDATE entregas SET ${sets.join(', ')} WHERE id = ?`,
-      [...vals, entregaId]
-    );
-
-    const [[actualizada]] = await require('../config/db').pool.query(
+    await pool.query(`UPDATE entregas SET ${sets.join(', ')} WHERE id = ?`, [...vals, entregaId]);
+    const [[actualizada]] = await pool.query(
       `SELECT e.*, m.nombres_completos AS miembro_nombre FROM entregas e
        JOIN miembros m ON m.id = e.miembro_id WHERE e.id = ?`,
       [entregaId]
@@ -177,7 +205,6 @@ async function reporte(req, res, next) {
   try {
     const datos = await model.reporteCalificaciones(req.params.id);
     const { plan, items, miembros } = datos;
-
     const formato = String(req.query.formato || '').toLowerCase();
 
     if (formato === 'excel' || formato === 'pdf') {
@@ -192,26 +219,20 @@ async function reporte(req, res, next) {
             if (v == null) return '—';
             if (plan.tipo_calificacion === 'NUMERICA') return String(v);
             if (plan.tipo_calificacion === 'CATEGORICA') return ETIQUETAS_CAT[v] || v;
-            return ETIQUETAS_SIMPLE[v] || v;
+            return v === 'ENTREGADO' ? 'Sí' : 'No';
           },
         })),
         ...(plan.tipo_calificacion === 'NUMERICA' ? [
           { clave: 'nota_final', titulo: 'Nota final', render: (f) => f.nota_final ?? '—' },
           { clave: 'aprobado', titulo: 'Estado', render: (f) => (f.aprobado == null ? '—' : f.aprobado ? 'Aprobado' : 'Reprobado') },
         ] : plan.tipo_calificacion === 'SIMPLE' ? [
-          { clave: 'porcentaje_entrega', titulo: '% Entregado', render: (f) => `${f.porcentaje_entrega}%` },
+          { clave: 'porcentaje_entrega', titulo: '% Entregado', render: (f) => `${f.porcentaje_entrega ?? 0}%` },
         ] : []),
       ];
-
-      const filas = miembros.map((m) => ({
-        ...m,
-        ...items.reduce((acc, i) => ({ ...acc, [`item_${i.id}`]: m }), {}),
-      }));
-
+      const filas = miembros.map((m) => ({ ...m }));
       const buffer = formato === 'excel'
         ? generarExcel({ columnas, filas, nombreHoja: 'Reporte' })
-        : await generarPdf({ titulo: `Reporte: ${plan.nombre}`, subtitulo: ETIQUETAS_TIPO[plan.tipo_calificacion], columnas, filas });
-
+        : await generarPdf({ titulo: `Reporte: ${plan.nombre}`, columnas, filas });
       return enviarArchivo(res, { formato, buffer, nombreArchivo: `reporte_${plan.nombre.replace(/\s+/g, '_')}` });
     }
 
@@ -219,4 +240,9 @@ async function reporte(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { listar, obtener, crear, actualizar, activar, desactivar, listarItems, crearItem, actualizarItem, eliminarItem, reordenarItems, historial, calificarEntrega, reporte };
+module.exports = {
+  listar, obtener, crear, actualizar, activar, desactivar,
+  listarSecciones, crearSeccion, actualizarSeccion, eliminarSeccion, reordenarSecciones,
+  listarItems, crearItem, actualizarItem, eliminarItem, reordenarItems,
+  historial, calificarEntrega, reporte,
+};

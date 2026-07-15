@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   obtenerPlan,
+  actualizarPlan,
   activarPlan,
   desactivarPlan,
-  crearItem,
+  crearSeccion,
+  actualizarSeccion,
+  eliminarSeccion,
+  reordenarSecciones,
+  crearItemEnSeccion,
   actualizarItem,
   eliminarItem,
   reordenarItems,
@@ -21,20 +26,21 @@ import FormField from '../../components/ui/FormField';
 import StatusBadge from '../../components/ui/StatusBadge';
 import './PlanesEstudio.css';
 
+// ─── Constantes ────────────────────────────────────────────────────────────────
+
 const PESTANAS = [
-  { clave: 'estructura', titulo: 'Estructura' },
-  { clave: 'historial', titulo: 'Historial de entregas' },
-  { clave: 'reporte', titulo: 'Reporte de calificaciones' },
+  { clave: 'estructura', titulo: '📋 Estructura' },
+  { clave: 'historial', titulo: '📥 Historial' },
+  { clave: 'reporte', titulo: '📊 Reporte' },
 ];
 
-const ITEM_FORM_VACIO = {
-  titulo: '',
-  tipo: 'ACTIVIDAD',
-  ponderado: '',
-  fecha_limite: '',
-};
+const CATS = [
+  { value: '', label: 'Sin calificación' },
+  { value: 'EXCELENTE', label: 'Excelente' },
+  { value: 'POR_MEJORAR', label: 'Por mejorar' },
+];
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function TipoBadge({ tipo }) {
   return tipo === 'EXAMEN'
@@ -43,39 +49,101 @@ function TipoBadge({ tipo }) {
 }
 
 function CalifBadge({ tipo }) {
-  const map = { NUMERICA: 'info', CATEGORICA: 'warning', SIMPLE: 'secondary' };
-  const label = { NUMERICA: 'Numérica', CATEGORICA: 'Categórica', SIMPLE: 'Simple' };
-  return <StatusBadge texto={label[tipo] ?? tipo} variant={map[tipo] ?? 'secondary'} />;
+  const mapa = {
+    NUMERICA: ['Numérica', 'info'],
+    CATEGORICA: ['Categórica', 'warning'],
+    SIMPLE: ['Simple', 'secondary'],
+  };
+  const [texto, variant] = mapa[tipo] || [tipo, 'secondary'];
+  return <StatusBadge texto={texto} variant={variant} />;
 }
 
-// ── Estructura (tab 1) ─────────────────────────────────────────────────────
+// ─── Tab Estructura ────────────────────────────────────────────────────────────
 
 function TabEstructura({ plan, onRefresh }) {
-  const items = plan.items ?? [];
+  const secciones = plan.secciones ?? [];
   const esNumerica = plan.tipo_calificacion === 'NUMERICA';
 
-  const [modalItem, setModalItem] = useState(false);
-  const [editandoItem, setEditandoItem] = useState(null);
-  const [formItem, setFormItem] = useState(ITEM_FORM_VACIO);
+  const todosItems = secciones.flatMap((s) => s.items ?? []);
+  const sumaPonderados = todosItems.reduce((s, i) => s + (Number(i.ponderado) || 0), 0);
+
+  // Edición inline de nombre de sección
+  const [editandoSeccion, setEditandoSeccion] = useState(null); // { id, nombre }
+  const [guardandoSeccion, setGuardandoSeccion] = useState(false);
+  const inputSeccionRef = useRef(null);
+
+  // Modal ítem
+  const [modalItem, setModalItem] = useState(null); // { seccionId, item? }
+  const [formItem, setFormItem] = useState({ titulo: '', tipo: 'ACTIVIDAD', ponderado: '', fecha_limite: '' });
   const [guardandoItem, setGuardandoItem] = useState(false);
   const [errorItem, setErrorItem] = useState('');
-  const [confirmEliminar, setConfirmEliminar] = useState(null);
 
-  const sumaPonderados = items.reduce((s, i) => s + (Number(i.ponderado) || 0), 0);
+  // Confirm eliminar
+  const [confirmEliminar, setConfirmEliminar] = useState(null); // { tipo, id, nombre }
 
-  function setI(campo) {
-    return (e) => setFormItem((p) => ({ ...p, [campo]: e.target.value }));
+  // ── Secciones ──
+
+  async function crearNuevaSeccion() {
+    try {
+      await crearSeccion(plan.id, { nombre: 'Nueva sección' });
+      onRefresh();
+    } catch { /* silent */ }
   }
 
-  function abrirCrearItem() {
-    setEditandoItem(null);
-    setFormItem(ITEM_FORM_VACIO);
+  function iniciarEditarSeccion(sec) {
+    setEditandoSeccion({ id: sec.id, nombre: sec.nombre });
+    setTimeout(() => inputSeccionRef.current?.focus(), 50);
+  }
+
+  async function guardarNombreSeccion() {
+    if (!editandoSeccion) return;
+    setGuardandoSeccion(true);
+    try {
+      await actualizarSeccion(plan.id, editandoSeccion.id, { nombre: editandoSeccion.nombre });
+      onRefresh();
+    } catch { /* silent */ }
+    finally {
+      setGuardandoSeccion(false);
+      setEditandoSeccion(null);
+    }
+  }
+
+  async function moverSeccion(sec, dir) {
+    const sorted = [...secciones].sort((a, b) => a.orden - b.orden);
+    const idx = sorted.findIndex((s) => s.id === sec.id);
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const ordenes = sorted.map((s, j) => {
+      if (j === idx) return { id: s.id, orden: sorted[swapIdx].orden };
+      if (j === swapIdx) return { id: s.id, orden: sorted[idx].orden };
+      return { id: s.id, orden: s.orden };
+    });
+    try { await reordenarSecciones(plan.id, ordenes); onRefresh(); } catch { /* silent */ }
+  }
+
+  async function confirmarEliminarAccion() {
+    if (!confirmEliminar) return;
+    try {
+      if (confirmEliminar.tipo === 'seccion') {
+        await eliminarSeccion(plan.id, confirmEliminar.id);
+      } else {
+        await eliminarItem(plan.id, confirmEliminar.id);
+      }
+      setConfirmEliminar(null);
+      onRefresh();
+    } catch { setConfirmEliminar(null); }
+  }
+
+  // ── Ítems ──
+
+  function abrirCrearItem(seccionId) {
+    setModalItem({ seccionId, item: null });
+    setFormItem({ titulo: '', tipo: 'ACTIVIDAD', ponderado: '', fecha_limite: '' });
     setErrorItem('');
-    setModalItem(true);
   }
 
-  function abrirEditarItem(item) {
-    setEditandoItem(item);
+  function abrirEditarItem(seccionId, item) {
+    setModalItem({ seccionId, item });
     setFormItem({
       titulo: item.titulo,
       tipo: item.tipo,
@@ -83,15 +151,13 @@ function TabEstructura({ plan, onRefresh }) {
       fecha_limite: item.fecha_limite ? item.fecha_limite.slice(0, 10) : '',
     });
     setErrorItem('');
-    setModalItem(true);
   }
 
   async function guardarItem(e) {
     e.preventDefault();
     if (!formItem.titulo.trim()) return setErrorItem('El título es obligatorio.');
-    if (esNumerica && formItem.tipo === 'ACTIVIDAD' && formItem.ponderado === '') {
-      return setErrorItem('El ponderado es obligatorio para ítems numéricos.');
-    }
+    if (esNumerica && !modalItem.item && formItem.ponderado === '')
+      return setErrorItem('El ponderado es obligatorio para planes numéricos.');
     setGuardandoItem(true);
     setErrorItem('');
     try {
@@ -101,117 +167,177 @@ function TabEstructura({ plan, onRefresh }) {
         ponderado: esNumerica && formItem.ponderado !== '' ? Number(formItem.ponderado) : null,
         fecha_limite: formItem.fecha_limite || null,
       };
-      if (editandoItem) {
-        await actualizarItem(plan.id, editandoItem.id, payload);
+      if (modalItem.item) {
+        await actualizarItem(plan.id, modalItem.item.id, payload);
       } else {
-        await crearItem(plan.id, payload);
+        await crearItemEnSeccion(plan.id, modalItem.seccionId, payload);
       }
-      setModalItem(false);
+      setModalItem(null);
       onRefresh();
     } catch (err) {
-      setErrorItem(err.response?.data?.message || 'No se pudo guardar el ítem.');
+      setErrorItem(err?.response?.data?.message || 'No se pudo guardar el ítem.');
     } finally {
       setGuardandoItem(false);
     }
   }
 
-  async function moverItem(item, direccion) {
-    const sorted = [...items].sort((a, b) => a.orden - b.orden);
+  async function moverItem(seccion, item, dir) {
+    const sorted = [...(seccion.items ?? [])].sort((a, b) => a.orden - b.orden);
     const idx = sorted.findIndex((i) => i.id === item.id);
-    const swapIdx = idx + direccion;
+    const swapIdx = idx + dir;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
-
     const ordenes = sorted.map((i, j) => {
       if (j === idx) return { id: i.id, orden: sorted[swapIdx].orden };
       if (j === swapIdx) return { id: i.id, orden: sorted[idx].orden };
       return { id: i.id, orden: i.orden };
     });
-    try {
-      await reordenarItems(plan.id, ordenes);
-      onRefresh();
-    } catch { /* silent */ }
+    try { await reordenarItems(plan.id, ordenes); onRefresh(); } catch { /* silent */ }
   }
 
-  async function confirmarEliminar() {
-    if (!confirmEliminar) return;
-    try {
-      await eliminarItem(plan.id, confirmEliminar.id);
-      setConfirmEliminar(null);
-      onRefresh();
-    } catch {
-      setConfirmEliminar(null);
-    }
-  }
-
-  const sorted = [...items].sort((a, b) => a.orden - b.orden);
+  const secsSorted = [...secciones].sort((a, b) => a.orden - b.orden);
 
   return (
     <div className="planes-det__estructura">
-      <div className="planes-det__estructura-header">
+      {/* Cabecera */}
+      <div className="planes-det__est-header">
         <div>
           {esNumerica && (
-            <p className={`planes-det__ponderado-total ${Math.abs(sumaPonderados - 100) > 0.01 ? 'planes-det__ponderado-total--warn' : ''}`}>
-              Suma de ponderados: <strong>{sumaPonderados.toFixed(1)}%</strong>
-              {Math.abs(sumaPonderados - 100) > 0.01 && ' — debe sumar 100%'}
+            <p className={`planes-det__pond-total ${Math.abs(sumaPonderados - 100) > 0.01 ? 'planes-det__pond-total--warn' : 'planes-det__pond-total--ok'}`}>
+              Suma ponderados: <strong>{sumaPonderados.toFixed(1)}%</strong>
+              {Math.abs(sumaPonderados - 100) > 0.01 && ' ⚠ debe sumar 100%'}
             </p>
           )}
         </div>
-        <Button onClick={abrirCrearItem}>+ Nuevo ítem</Button>
+        <Button onClick={crearNuevaSeccion}>+ Nueva sección</Button>
       </div>
 
-      {sorted.length === 0 ? (
-        <p className="planes-det__vacio">Este plan aún no tiene ítems. Agrega actividades o exámenes.</p>
-      ) : (
-        <table className="planes-det__tabla">
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>Orden</th>
-              <th>Título</th>
-              <th>Tipo</th>
-              {esNumerica && <th>Ponderado</th>}
-              <th>Fecha límite</th>
-              <th style={{ width: 100 }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((item, idx) => (
-              <tr key={item.id}>
-                <td className="planes-det__orden">
-                  <button
-                    className="planes-det__flecha"
-                    onClick={() => moverItem(item, -1)}
-                    disabled={idx === 0}
-                    title="Subir"
-                  >▲</button>
-                  <button
-                    className="planes-det__flecha"
-                    onClick={() => moverItem(item, 1)}
-                    disabled={idx === sorted.length - 1}
-                    title="Bajar"
-                  >▼</button>
-                </td>
-                <td>{item.titulo}</td>
-                <td><TipoBadge tipo={item.tipo} /></td>
-                {esNumerica && <td>{item.ponderado != null ? `${item.ponderado}%` : '—'}</td>}
-                <td>{item.fecha_limite ? item.fecha_limite.slice(0, 10) : '—'}</td>
-                <td className="planes-det__item-acciones">
-                  <button className="planes-det__btn-link" onClick={() => abrirEditarItem(item)}>Editar</button>
-                  <button className="planes-det__btn-link planes-det__btn-link--danger" onClick={() => setConfirmEliminar(item)}>Eliminar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {secsSorted.length === 0 && (
+        <div className="planes-det__empty-state">
+          <span className="planes-det__empty-icon">📂</span>
+          <p>Aún no hay secciones. Crea la primera para organizar el plan.</p>
+        </div>
       )}
+
+      {secsSorted.map((sec, secIdx) => {
+        const itemsSorted = [...(sec.items ?? [])].sort((a, b) => a.orden - b.orden);
+        return (
+          <div key={sec.id} className="planes-det__seccion-card">
+            {/* Header sección */}
+            <div className="planes-det__seccion-hdr">
+              <div className="planes-det__seccion-reorder">
+                <button
+                  className="planes-det__flecha"
+                  onClick={() => moverSeccion(sec, -1)}
+                  disabled={secIdx === 0}
+                  title="Subir"
+                >▲</button>
+                <button
+                  className="planes-det__flecha"
+                  onClick={() => moverSeccion(sec, 1)}
+                  disabled={secIdx === secsSorted.length - 1}
+                  title="Bajar"
+                >▼</button>
+              </div>
+              <span className="planes-det__seccion-icono">📂</span>
+              {editandoSeccion?.id === sec.id ? (
+                <input
+                  ref={inputSeccionRef}
+                  className="planes-det__seccion-input"
+                  value={editandoSeccion.nombre}
+                  onChange={(e) => setEditandoSeccion((p) => ({ ...p, nombre: e.target.value }))}
+                  onBlur={guardarNombreSeccion}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') guardarNombreSeccion();
+                    if (e.key === 'Escape') setEditandoSeccion(null);
+                  }}
+                  disabled={guardandoSeccion}
+                />
+              ) : (
+                <span
+                  className="planes-det__seccion-nombre"
+                  onClick={() => iniciarEditarSeccion(sec)}
+                  title="Clic para renombrar"
+                >
+                  {sec.nombre}
+                </span>
+              )}
+              <span className="planes-det__seccion-count">
+                {itemsSorted.length} ítem{itemsSorted.length !== 1 ? 's' : ''}
+              </span>
+              <div className="planes-det__seccion-acciones">
+                <button
+                  className="planes-det__btn-ghost"
+                  onClick={() => iniciarEditarSeccion(sec)}
+                  title="Renombrar"
+                >✏️</button>
+                <button
+                  className="planes-det__btn-ghost planes-det__btn-ghost--danger"
+                  onClick={() => setConfirmEliminar({ tipo: 'seccion', id: sec.id, nombre: sec.nombre })}
+                  title="Eliminar sección"
+                >🗑</button>
+              </div>
+            </div>
+
+            {/* Ítems de la sección */}
+            <div className="planes-det__items-lista">
+              {itemsSorted.map((item, itemIdx) => (
+                <div
+                  key={item.id}
+                  className={`planes-det__item-row ${item.tipo === 'EXAMEN' ? 'planes-det__item-row--examen' : ''}`}
+                >
+                  <div className="planes-det__item-reorder">
+                    <button
+                      className="planes-det__flecha"
+                      onClick={() => moverItem(sec, item, -1)}
+                      disabled={itemIdx === 0}
+                    >▲</button>
+                    <button
+                      className="planes-det__flecha"
+                      onClick={() => moverItem(sec, item, 1)}
+                      disabled={itemIdx === itemsSorted.length - 1}
+                    >▼</button>
+                  </div>
+                  <TipoBadge tipo={item.tipo} />
+                  <span className="planes-det__item-titulo">{item.titulo}</span>
+                  {esNumerica && item.ponderado != null && (
+                    <span className="planes-det__item-pond">{item.ponderado}%</span>
+                  )}
+                  {item.fecha_limite && (
+                    <span className="planes-det__item-fecha">
+                      📅 {item.fecha_limite.slice(0, 10)}
+                    </span>
+                  )}
+                  {item.tipo === 'EXAMEN' && (
+                    <span className="planes-det__item-lock-hint">🔒 se desbloquea al completar sección</span>
+                  )}
+                  <div className="planes-det__item-btns">
+                    <button
+                      className="planes-det__btn-link"
+                      onClick={() => abrirEditarItem(sec.id, item)}
+                    >Editar</button>
+                    <button
+                      className="planes-det__btn-link planes-det__btn-link--danger"
+                      onClick={() => setConfirmEliminar({ tipo: 'item', id: item.id, nombre: item.titulo })}
+                    >Eliminar</button>
+                  </div>
+                </div>
+              ))}
+              <button className="planes-det__add-item-btn" onClick={() => abrirCrearItem(sec.id)}>
+                + Agregar ítem
+              </button>
+            </div>
+          </div>
+        );
+      })}
 
       {/* Modal ítem */}
       <Modal
-        abierto={modalItem}
-        titulo={editandoItem ? 'Editar ítem' : 'Nuevo ítem'}
-        onClose={() => setModalItem(false)}
+        abierto={!!modalItem}
+        titulo={modalItem?.item ? 'Editar ítem' : 'Nuevo ítem'}
+        onClose={() => setModalItem(null)}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalItem(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => setModalItem(null)}>Cancelar</Button>
             <Button onClick={guardarItem} loading={guardandoItem}>Guardar</Button>
           </>
         }
@@ -221,7 +347,7 @@ function TabEstructura({ plan, onRefresh }) {
             label="Título"
             name="titulo"
             value={formItem.titulo}
-            onChange={setI('titulo')}
+            onChange={(e) => setFormItem((p) => ({ ...p, titulo: e.target.value }))}
             required
           />
           <FormField
@@ -229,12 +355,11 @@ function TabEstructura({ plan, onRefresh }) {
             type="select"
             name="tipo"
             value={formItem.tipo}
-            onChange={setI('tipo')}
+            onChange={(e) => setFormItem((p) => ({ ...p, tipo: e.target.value }))}
             options={[
               { value: 'ACTIVIDAD', label: 'Actividad' },
-              { value: 'EXAMEN', label: 'Examen' },
+              { value: 'EXAMEN', label: 'Examen (se desbloquea al completar actividades previas)' },
             ]}
-            helpText={formItem.tipo === 'EXAMEN' ? 'Se desbloqueará cuando todas las actividades anteriores estén entregadas.' : ''}
           />
           {esNumerica && (
             <FormField
@@ -242,29 +367,32 @@ function TabEstructura({ plan, onRefresh }) {
               type="number"
               name="ponderado"
               value={formItem.ponderado}
-              onChange={setI('ponderado')}
+              onChange={(e) => setFormItem((p) => ({ ...p, ponderado: e.target.value }))}
               min="0"
               max="100"
               step="0.01"
             />
           )}
           <FormField
-            label="Fecha límite"
+            label="Fecha límite (opcional)"
             type="date"
             name="fecha_limite"
             value={formItem.fecha_limite}
-            onChange={setI('fecha_limite')}
+            onChange={(e) => setFormItem((p) => ({ ...p, fecha_limite: e.target.value }))}
           />
           {errorItem && <p className="planes-det__error">{errorItem}</p>}
         </form>
       </Modal>
 
-      {/* Confirm eliminar */}
       <ConfirmDialog
         abierto={!!confirmEliminar}
-        titulo="Eliminar ítem"
-        mensaje={`¿Eliminar "${confirmEliminar?.titulo}"? Esta acción no se puede deshacer.`}
-        onConfirmar={confirmarEliminar}
+        titulo={confirmEliminar?.tipo === 'seccion' ? 'Eliminar sección' : 'Eliminar ítem'}
+        mensaje={
+          confirmEliminar?.tipo === 'seccion'
+            ? `¿Eliminar la sección "${confirmEliminar?.nombre}" y todos sus ítems?`
+            : `¿Eliminar el ítem "${confirmEliminar?.nombre}"?`
+        }
+        onConfirmar={confirmarEliminarAccion}
         onCancelar={() => setConfirmEliminar(null)}
         textoConfirmar="Eliminar"
       />
@@ -272,41 +400,40 @@ function TabEstructura({ plan, onRefresh }) {
   );
 }
 
-// ── Historial (tab 2) ──────────────────────────────────────────────────────
-
-const CATS = [
-  { value: '', label: 'Sin calificación' },
-  { value: 'EXCELENTE', label: 'Excelente' },
-  { value: 'POR_MEJORAR', label: 'Por mejorar' },
-];
+// ─── Tab Historial ─────────────────────────────────────────────────────────────
 
 function TabHistorial({ plan }) {
-  const [historial, setHistorial] = useState([]);
+  const [historialSecciones, setHistorialSecciones] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [calificando, setCalificando] = useState({}); // entregaId → true/false
-  const [valores, setValores] = useState({}); // entregaId → { calificacion|cat, retro }
   const [expandidos, setExpandidos] = useState({});
+  const [valores, setValores] = useState({});
+  const [calificando, setCalificando] = useState({});
+  const [exito, setExito] = useState({});
 
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
       const resp = await obtenerHistorial(plan.id);
-      const data = resp.data ?? resp;
-      setHistorial(data);
-      // Inicializar valores de formulario desde entregas existentes
+      const raw = resp.data ?? resp;
+      // raw = { plan, secciones } ó array directo
+      const secciones = Array.isArray(raw) ? raw : (raw.secciones ?? []);
+      setHistorialSecciones(secciones);
+      // Pre-poblar valores con calificaciones ya existentes
       const init = {};
-      for (const grupo of data) {
-        for (const e of grupo.entregas ?? []) {
-          init[e.id] = {
-            calificacion: e.calificacion ?? '',
-            calificacion_categorica: e.calificacion_categorica ?? '',
-            retroalimentacion: e.retroalimentacion ?? '',
-          };
+      for (const sec of secciones) {
+        for (const item of sec.items ?? []) {
+          for (const e of item.entregas ?? []) {
+            init[e.id] = {
+              calificacion: e.calificacion ?? '',
+              calificacion_categorica: e.calificacion_categorica ?? '',
+              retroalimentacion: e.retroalimentacion ?? '',
+            };
+          }
         }
       }
       setValores(init);
     } catch {
-      setHistorial([]);
+      setHistorialSecciones([]);
     } finally {
       setCargando(false);
     }
@@ -314,124 +441,160 @@ function TabHistorial({ plan }) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  function toggleExpand(itemId) {
-    setExpandidos((p) => ({ ...p, [itemId]: !p[itemId] }));
+  function toggle(key) {
+    setExpandidos((p) => ({ ...p, [key]: !p[key] }));
   }
 
-  function setVal(entregaId, campo, valor) {
-    setValores((p) => ({ ...p, [entregaId]: { ...p[entregaId], [campo]: valor } }));
+  function setVal(eid, campo, v) {
+    setValores((p) => ({ ...p, [eid]: { ...p[eid], [campo]: v } }));
   }
 
-  async function guardarCalif(entregaId) {
-    setCalificando((p) => ({ ...p, [entregaId]: true }));
+  async function guardarCalif(eid) {
+    setCalificando((p) => ({ ...p, [eid]: true }));
     try {
-      const v = valores[entregaId] || {};
+      const v = valores[eid] || {};
       const payload = { retroalimentacion: v.retroalimentacion || null };
       if (plan.tipo_calificacion === 'NUMERICA') {
         payload.calificacion = v.calificacion !== '' ? Number(v.calificacion) : null;
       } else if (plan.tipo_calificacion === 'CATEGORICA') {
         payload.calificacion_categorica = v.calificacion_categorica || null;
       }
-      await calificarEntrega(plan.id, entregaId, payload);
-      await cargar();
-    } catch { /* silent */ } finally {
-      setCalificando((p) => ({ ...p, [entregaId]: false }));
-    }
+      await calificarEntrega(plan.id, eid, payload);
+      setExito((p) => ({ ...p, [eid]: true }));
+      setTimeout(() => setExito((p) => ({ ...p, [eid]: false })), 2500);
+      cargar();
+    } catch { /* silent */ }
+    finally { setCalificando((p) => ({ ...p, [eid]: false })); }
   }
 
   if (cargando) return <p className="planes-det__cargando">Cargando historial...</p>;
-  if (historial.length === 0) return <p className="planes-det__vacio">No hay entregas registradas aún.</p>;
+  if (historialSecciones.length === 0) {
+    return <p className="planes-det__vacio">Aún no hay entregas registradas.</p>;
+  }
+
+  const totalEntregas = historialSecciones.reduce(
+    (s, sec) => s + (sec.items ?? []).reduce((ss, i) => ss + (i.entregas?.length ?? 0), 0),
+    0
+  );
 
   return (
     <div className="planes-det__historial">
-      {historial.map((grupo) => (
-        <div key={grupo.item_id} className="planes-det__grupo">
-          <button
-            className="planes-det__grupo-header"
-            onClick={() => toggleExpand(grupo.item_id)}
-          >
-            <TipoBadge tipo={grupo.item_tipo} />
-            <span className="planes-det__grupo-titulo">{grupo.item_titulo}</span>
-            <span className="planes-det__grupo-count">{grupo.entregas?.length ?? 0} entregas</span>
-            <span className="planes-det__grupo-chevron">{expandidos[grupo.item_id] ? '▲' : '▼'}</span>
-          </button>
+      <p className="planes-det__hist-total">
+        <strong>{totalEntregas}</strong> entrega{totalEntregas !== 1 ? 's' : ''} en total
+      </p>
 
-          {expandidos[grupo.item_id] && (
-            <div className="planes-det__entregas">
-              {!grupo.entregas?.length && (
-                <p className="planes-det__vacio-sub">Sin entregas para este ítem.</p>
-              )}
-              {grupo.entregas?.map((e) => (
-                <div key={e.id} className="planes-det__entrega">
-                  <div className="planes-det__entrega-info">
-                    <strong>{e.miembro_nombre}</strong>
-                    <span className="planes-det__entrega-fecha">{e.fecha_entrega ? e.fecha_entrega.slice(0, 10) : '—'}</span>
-                    {e.url_evidencia && (
-                      <a href={e.url_evidencia} target="_blank" rel="noopener noreferrer" className="planes-det__btn-link">
-                        Ver evidencia
-                      </a>
-                    )}
+      {historialSecciones.map((sec) => (
+        <div key={sec.id} className="planes-det__hist-seccion">
+          <h3 className="planes-det__hist-seccion-titulo">📂 {sec.nombre}</h3>
+
+          {(sec.items ?? []).map((item) => {
+            const key = `item-${item.id}`;
+            const cnt = item.entregas?.length ?? 0;
+            return (
+              <div key={item.id} className="planes-det__hist-item">
+                <button
+                  className="planes-det__hist-item-hdr"
+                  onClick={() => toggle(key)}
+                >
+                  <TipoBadge tipo={item.tipo} />
+                  <span className="planes-det__hist-item-titulo">{item.titulo}</span>
+                  <span className={`planes-det__hist-cnt ${cnt > 0 ? 'planes-det__hist-cnt--has' : ''}`}>
+                    {cnt} entrega{cnt !== 1 ? 's' : ''}
+                  </span>
+                  <span className="planes-det__chev">{expandidos[key] ? '▲' : '▼'}</span>
+                </button>
+
+                {expandidos[key] && (
+                  <div className="planes-det__hist-entregas">
+                    {cnt === 0 && <p className="planes-det__vacio-sub">Sin entregas aún.</p>}
+                    {item.entregas?.map((e) => (
+                      <div key={e.id} className="planes-det__entrega-card">
+                        <div className="planes-det__entrega-card-top">
+                          <div>
+                            <strong className="planes-det__entrega-nombre">{e.miembro_nombre}</strong>
+                            <span className="planes-det__entrega-fecha">
+                              {e.fecha_entrega ? e.fecha_entrega.slice(0, 10) : '—'}
+                            </span>
+                          </div>
+                          <div className="planes-det__entrega-estado">
+                            {e.calificacion != null && (
+                              <span className="planes-det__entrega-nota">{e.calificacion}</span>
+                            )}
+                            {e.calificacion_categorica && (
+                              <StatusBadge
+                                texto={e.calificacion_categorica === 'EXCELENTE' ? 'Excelente' : 'Por mejorar'}
+                                variant={e.calificacion_categorica === 'EXCELENTE' ? 'success' : 'warning'}
+                              />
+                            )}
+                            {plan.tipo_calificacion === 'SIMPLE' && (
+                              <StatusBadge texto="Entregado" variant="success" />
+                            )}
+                          </div>
+                        </div>
+
+                        {e.observaciones && (
+                          <p className="planes-det__entrega-obs">"{e.observaciones}"</p>
+                        )}
+                        {e.url_evidencia && (
+                          <a
+                            href={e.url_evidencia}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="planes-det__entrega-link"
+                          >
+                            🔗 Ver evidencia
+                          </a>
+                        )}
+
+                        <div className="planes-det__calif-row">
+                          {plan.tipo_calificacion === 'NUMERICA' && (
+                            <input
+                              type="number"
+                              className="planes-det__calif-input"
+                              min="0"
+                              max="10"
+                              step="0.1"
+                              placeholder="Nota (0–10)"
+                              value={valores[e.id]?.calificacion ?? ''}
+                              onChange={(ev) => setVal(e.id, 'calificacion', ev.target.value)}
+                            />
+                          )}
+                          {plan.tipo_calificacion === 'CATEGORICA' && (
+                            <select
+                              className="planes-det__calif-select"
+                              value={valores[e.id]?.calificacion_categorica ?? ''}
+                              onChange={(ev) => setVal(e.id, 'calificacion_categorica', ev.target.value)}
+                            >
+                              {CATS.map((c) => (
+                                <option key={c.value} value={c.value}>{c.label}</option>
+                              ))}
+                            </select>
+                          )}
+                          <input
+                            type="text"
+                            className="planes-det__calif-retro"
+                            placeholder="Retroalimentación (opcional)"
+                            value={valores[e.id]?.retroalimentacion ?? ''}
+                            onChange={(ev) => setVal(e.id, 'retroalimentacion', ev.target.value)}
+                          />
+                          <Button loading={calificando[e.id]} onClick={() => guardarCalif(e.id)}>
+                            {exito[e.id] ? '✓ Guardado' : (plan.tipo_calificacion === 'SIMPLE' ? 'Guardar retro' : 'Guardar')}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {e.observaciones && (
-                    <p className="planes-det__entrega-obs">{e.observaciones}</p>
-                  )}
-
-                  <div className="planes-det__calif-form">
-                    {plan.tipo_calificacion === 'NUMERICA' && (
-                      <input
-                        type="number"
-                        className="planes-det__calif-input"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        placeholder="Nota"
-                        value={valores[e.id]?.calificacion ?? ''}
-                        onChange={(ev) => setVal(e.id, 'calificacion', ev.target.value)}
-                      />
-                    )}
-                    {plan.tipo_calificacion === 'CATEGORICA' && (
-                      <select
-                        className="planes-det__calif-select"
-                        value={valores[e.id]?.calificacion_categorica ?? ''}
-                        onChange={(ev) => setVal(e.id, 'calificacion_categorica', ev.target.value)}
-                      >
-                        {CATS.map((c) => (
-                          <option key={c.value} value={c.value}>{c.label}</option>
-                        ))}
-                      </select>
-                    )}
-                    {plan.tipo_calificacion === 'SIMPLE' && (
-                      <span className="planes-det__calif-simple">✓ Entregado</span>
-                    )}
-                    <input
-                      type="text"
-                      className="planes-det__calif-retro"
-                      placeholder="Retroalimentación (opcional)"
-                      value={valores[e.id]?.retroalimentacion ?? ''}
-                      onChange={(ev) => setVal(e.id, 'retroalimentacion', ev.target.value)}
-                    />
-                    {plan.tipo_calificacion !== 'SIMPLE' && (
-                      <Button
-                        size="sm"
-                        loading={calificando[e.id]}
-                        onClick={() => guardarCalif(e.id)}
-                      >
-                        Guardar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>
   );
 }
 
-// ── Reporte (tab 3) ────────────────────────────────────────────────────────
+// ─── Tab Reporte ───────────────────────────────────────────────────────────────
 
 function TabReporte({ plan }) {
   const [reporte, setReporte] = useState(null);
@@ -446,106 +609,170 @@ function TabReporte({ plan }) {
       .finally(() => setCargando(false));
   }, [plan.id]);
 
-  async function exportar(formato) {
+  async function exportar(fmt) {
     setExportando(true);
-    try { await exportarReporte(plan.id, formato); }
-    catch { /* silent */ }
+    try { await exportarReporte(plan.id, fmt); } catch { /* silent */ }
     finally { setExportando(false); }
   }
 
   if (cargando) return <p className="planes-det__cargando">Cargando reporte...</p>;
   if (!reporte) return <p className="planes-det__vacio">No se pudo cargar el reporte.</p>;
 
-  const { miembros = [], items = [], resumen } = reporte;
+  const { items = [], miembros = [] } = reporte;
+
+  const totalMiembros = miembros.length;
+  const aprobados = plan.tipo_calificacion === 'NUMERICA'
+    ? miembros.filter((m) => m.aprobado).length
+    : null;
+  const promedio = plan.tipo_calificacion === 'NUMERICA' && miembros.length > 0
+    ? (miembros.reduce((s, m) => s + (m.nota_final ?? 0), 0) / miembros.length).toFixed(2)
+    : null;
 
   return (
     <div className="planes-det__reporte">
+      {/* Tarjetas de resumen */}
+      <div className="planes-det__reporte-stats">
+        <div className="planes-det__stat-card">
+          <span className="planes-det__stat-num">{totalMiembros}</span>
+          <span className="planes-det__stat-lbl">Estudiantes</span>
+        </div>
+        {aprobados !== null && (
+          <div className="planes-det__stat-card planes-det__stat-card--success">
+            <span className="planes-det__stat-num">{aprobados}</span>
+            <span className="planes-det__stat-lbl">Aprobados</span>
+          </div>
+        )}
+        {promedio !== null && (
+          <div className="planes-det__stat-card planes-det__stat-card--info">
+            <span className="planes-det__stat-num">{promedio}</span>
+            <span className="planes-det__stat-lbl">Promedio</span>
+          </div>
+        )}
+        {plan.tipo_calificacion === 'NUMERICA' && plan.nota_minima_aprobacion && (
+          <div className="planes-det__stat-card">
+            <span className="planes-det__stat-num">{plan.nota_minima_aprobacion}</span>
+            <span className="planes-det__stat-lbl">Nota mínima</span>
+          </div>
+        )}
+      </div>
+
       <div className="planes-det__reporte-actions">
-        <Button variant="secondary" size="sm" loading={exportando} onClick={() => exportar('excel')}>
-          Exportar Excel
+        <Button variant="secondary" loading={exportando} onClick={() => exportar('excel')}>
+          ↓ Excel
         </Button>
-        <Button variant="secondary" size="sm" loading={exportando} onClick={() => exportar('pdf')}>
-          Exportar PDF
+        <Button variant="secondary" loading={exportando} onClick={() => exportar('pdf')}>
+          ↓ PDF
         </Button>
       </div>
 
-      {resumen && plan.tipo_calificacion === 'NUMERICA' && (
-        <p className="planes-det__reporte-resumen">
-          Nota mínima de aprobación: <strong>{plan.nota_minima_aprobacion ?? '—'}</strong>
-        </p>
-      )}
-
-      <div className="planes-det__tabla-scroll">
-        <table className="planes-det__tabla planes-det__tabla--reporte">
-          <thead>
-            <tr>
-              <th>Estudiante</th>
-              {items.map((it) => (
-                <th key={it.id} title={it.titulo}>
-                  {it.titulo.length > 18 ? `${it.titulo.slice(0, 16)}…` : it.titulo}
-                </th>
-              ))}
-              <th>Nota final</th>
-              {plan.tipo_calificacion === 'NUMERICA' && <th>¿Aprobó?</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {miembros.length === 0 ? (
-              <tr><td colSpan={items.length + 3} className="planes-det__vacio">Sin datos</td></tr>
-            ) : (
-              miembros.map((m) => (
-                <tr key={m.miembro_id}>
-                  <td>{m.nombres_completos}</td>
+      {miembros.length === 0 ? (
+        <p className="planes-det__vacio">No hay estudiantes inscritos en este nivel.</p>
+      ) : (
+        <div className="planes-det__tabla-scroll">
+          <table className="planes-det__tabla planes-det__tabla--reporte">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                {items.map((it) => (
+                  <th key={it.id} title={it.titulo}>
+                    <span className="planes-det__th-item">
+                      {it.tipo === 'EXAMEN' ? '★ ' : '● '}
+                      {it.titulo.length > 14 ? `${it.titulo.slice(0, 12)}…` : it.titulo}
+                      {plan.tipo_calificacion === 'NUMERICA' && it.ponderado != null && (
+                        <span className="planes-det__th-pond"> ({it.ponderado}%)</span>
+                      )}
+                    </span>
+                  </th>
+                ))}
+                {plan.tipo_calificacion === 'NUMERICA' && <th>Nota final</th>}
+                {plan.tipo_calificacion === 'NUMERICA' && <th>Estado</th>}
+                {plan.tipo_calificacion === 'SIMPLE' && <th>% Entregado</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {miembros.map((m) => (
+                <tr key={m.id}>
+                  <td className="planes-det__td-nombre">{m.nombres_completos}</td>
                   {items.map((it) => {
-                    const entrega = m.calificaciones?.find((c) => c.item_id === it.id);
-                    return (
-                      <td key={it.id}>
-                        {entrega
-                          ? (plan.tipo_calificacion === 'NUMERICA'
-                              ? (entrega.calificacion ?? '—')
-                              : plan.tipo_calificacion === 'CATEGORICA'
-                              ? (entrega.calificacion_categorica ?? 'Sin calificar')
-                              : '✓')
-                          : '—'}
-                      </td>
-                    );
+                    // calificaciones es OBJETO { [item_id]: valor }, no array
+                    const val = m.calificaciones?.[it.id];
+                    let celda = '—';
+                    let cls = 'planes-det__td-vacio';
+                    if (val != null) {
+                      if (plan.tipo_calificacion === 'NUMERICA') {
+                        celda = String(val);
+                        cls = Number(val) >= (plan.nota_minima_aprobacion ?? 0)
+                          ? 'planes-det__td-ok'
+                          : 'planes-det__td-mal';
+                      } else if (plan.tipo_calificacion === 'CATEGORICA') {
+                        celda = val === 'EXCELENTE' ? '⭐ Excelente' : '⚠ Por mejorar';
+                        cls = val === 'EXCELENTE' ? 'planes-det__td-ok' : 'planes-det__td-warn';
+                      } else {
+                        celda = '✓';
+                        cls = 'planes-det__td-ok';
+                      }
+                    }
+                    return <td key={it.id} className={cls}>{celda}</td>;
                   })}
-                  <td><strong>{m.nota_final ?? '—'}</strong></td>
+                  {plan.tipo_calificacion === 'NUMERICA' && (
+                    <td className="planes-det__td-nota">
+                      <strong>{m.nota_final ?? '—'}</strong>
+                    </td>
+                  )}
                   {plan.tipo_calificacion === 'NUMERICA' && (
                     <td>
                       {m.nota_final != null ? (
                         <StatusBadge
-                          texto={m.nota_final >= (plan.nota_minima_aprobacion ?? 0) ? 'Aprobó' : 'No aprobó'}
-                          variant={m.nota_final >= (plan.nota_minima_aprobacion ?? 0) ? 'success' : 'danger'}
+                          texto={m.aprobado ? 'Aprobó' : 'No aprobó'}
+                          variant={m.aprobado ? 'success' : 'danger'}
                         />
                       ) : '—'}
                     </td>
                   )}
+                  {plan.tipo_calificacion === 'SIMPLE' && (
+                    <td>{m.porcentaje_entrega ?? 0}%</td>
+                  )}
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── PlanDetalle ────────────────────────────────────────────────────────────
+// ─── PlanDetalle (principal) ───────────────────────────────────────────────────
 
 export default function PlanDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [plan, setPlan] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [tabActiva, setTabActiva] = useState('estructura');
-  const [confirmAccion, setConfirmAccion] = useState(null);
+
+  const [editandoPlan, setEditandoPlan] = useState(false);
+  const [formPlan, setFormPlan] = useState({
+    nombre: '', descripcion: '', nota_minima_aprobacion: '', fecha_inicio: '', fecha_fin: '',
+  });
+  const [guardandoPlan, setGuardandoPlan] = useState(false);
+
+  const [confirmAccion, setConfirmAccion] = useState(null); // 'activar' | 'desactivar'
 
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
       const resp = await obtenerPlan(id);
-      setPlan(resp.data ?? resp);
+      const data = resp.data ?? resp;
+      setPlan(data);
+      setFormPlan({
+        nombre: data.nombre,
+        descripcion: data.descripcion || '',
+        nota_minima_aprobacion: data.nota_minima_aprobacion ?? '',
+        fecha_inicio: data.fecha_inicio ? data.fecha_inicio.slice(0, 10) : '',
+        fecha_fin: data.fecha_fin ? data.fecha_fin.slice(0, 10) : '',
+      });
     } catch {
       setPlan(null);
     } finally {
@@ -558,53 +785,84 @@ export default function PlanDetalle() {
   async function ejecutarAccion() {
     if (!confirmAccion) return;
     try {
-      if (confirmAccion === 'activar') {
-        await activarPlan(id);
-      } else {
-        await desactivarPlan(id);
-      }
+      if (confirmAccion === 'activar') await activarPlan(id);
+      else await desactivarPlan(id);
       setConfirmAccion(null);
       cargar();
-    } catch {
-      setConfirmAccion(null);
-    }
+    } catch { setConfirmAccion(null); }
   }
 
-  if (cargando) return <div className="planes-det"><p>Cargando...</p></div>;
-  if (!plan) return <div className="planes-det"><p>Plan no encontrado.</p></div>;
+  async function guardarPlan(e) {
+    e.preventDefault();
+    setGuardandoPlan(true);
+    try {
+      await actualizarPlan(id, {
+        nombre: formPlan.nombre,
+        descripcion: formPlan.descripcion,
+        nota_minima_aprobacion: formPlan.nota_minima_aprobacion || null,
+        fecha_inicio: formPlan.fecha_inicio || null,
+        fecha_fin: formPlan.fecha_fin || null,
+      });
+      setEditandoPlan(false);
+      cargar();
+    } catch { /* silent */ }
+    finally { setGuardandoPlan(false); }
+  }
+
+  if (cargando) {
+    return <div className="planes-det"><p className="planes-det__cargando">Cargando plan...</p></div>;
+  }
+
+  if (!plan) {
+    return (
+      <div className="planes-det">
+        <button className="planes-det__volver" onClick={() => navigate('/planes-estudio')}>← Volver</button>
+        <p className="planes-det__vacio">Plan no encontrado.</p>
+      </div>
+    );
+  }
+
+  const secciones = plan.secciones ?? [];
+  const totalItems = secciones.flatMap((s) => s.items ?? []).length;
 
   return (
     <div className="planes-det">
-      {/* encabezado */}
-      <div className="planes-det__top">
-        <button className="planes-det__volver" onClick={() => navigate('/planes-estudio')}>
-          ← Planes de estudio
-        </button>
-      </div>
+      <button className="planes-det__volver" onClick={() => navigate('/planes-estudio')}>
+        ← Planes de estudio
+      </button>
 
+      {/* ── Cabecera del plan ── */}
       <div className="planes-det__header">
-        <div className="planes-det__header-info">
-          <h1>{plan.nombre}</h1>
+        <div className="planes-det__header-left">
           <div className="planes-det__header-meta">
-            <span>{plan.nivel_nombre}</span>
+            <span className="planes-det__nivel-chip">{plan.nivel_nombre}</span>
             <CalifBadge tipo={plan.tipo_calificacion} />
             <StatusBadge
               texto={plan.activo ? 'Activo' : 'Inactivo'}
               variant={plan.activo ? 'success' : 'secondary'}
             />
           </div>
+          <h1 className="planes-det__titulo">{plan.nombre}</h1>
           {plan.descripcion && <p className="planes-det__descripcion">{plan.descripcion}</p>}
+          <div className="planes-det__chips-row">
+            <span className="planes-det__chip">📂 {secciones.length} secciones</span>
+            <span className="planes-det__chip">📋 {totalItems} ítems</span>
+            {plan.fecha_inicio && (
+              <span className="planes-det__chip">
+                📅 {plan.fecha_inicio.slice(0, 10)} → {plan.fecha_fin?.slice(0, 10) ?? '?'}
+              </span>
+            )}
+            {plan.tipo_calificacion === 'NUMERICA' && plan.nota_minima_aprobacion && (
+              <span className="planes-det__chip">✅ Nota mín: {plan.nota_minima_aprobacion}</span>
+            )}
+          </div>
         </div>
-        <div className="planes-det__header-acciones">
-          {plan.activo ? (
-            <Button variant="secondary" onClick={() => setConfirmAccion('desactivar')}>
-              Desactivar
-            </Button>
-          ) : (
-            <Button onClick={() => setConfirmAccion('activar')}>
-              Activar
-            </Button>
-          )}
+        <div className="planes-det__header-right">
+          <Button variant="secondary" onClick={() => setEditandoPlan(true)}>Editar plan</Button>
+          {plan.activo
+            ? <Button variant="secondary" onClick={() => setConfirmAccion('desactivar')}>Desactivar</Button>
+            : <Button onClick={() => setConfirmAccion('activar')}>Activar</Button>
+          }
         </div>
       </div>
 
@@ -616,6 +874,67 @@ export default function PlanDetalle() {
         {tabActiva === 'reporte' && <TabReporte plan={plan} />}
       </div>
 
+      {/* Modal editar plan */}
+      <Modal
+        abierto={editandoPlan}
+        titulo="Editar plan de estudios"
+        onClose={() => setEditandoPlan(false)}
+        ancho="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditandoPlan(false)}>Cancelar</Button>
+            <Button onClick={guardarPlan} loading={guardandoPlan}>Guardar cambios</Button>
+          </>
+        }
+      >
+        <form onSubmit={guardarPlan} className="planes-det__form">
+          <FormField
+            label="Nombre del plan"
+            name="nombre"
+            value={formPlan.nombre}
+            onChange={(e) => setFormPlan((p) => ({ ...p, nombre: e.target.value }))}
+            required
+          />
+          <FormField
+            label="Descripción"
+            type="textarea"
+            name="descripcion"
+            value={formPlan.descripcion}
+            onChange={(e) => setFormPlan((p) => ({ ...p, descripcion: e.target.value }))}
+            rows={2}
+          />
+          {plan.tipo_calificacion === 'NUMERICA' && (
+            <FormField
+              label="Nota mínima de aprobación"
+              type="number"
+              name="nota_minima_aprobacion"
+              value={formPlan.nota_minima_aprobacion}
+              onChange={(e) => setFormPlan((p) => ({ ...p, nota_minima_aprobacion: e.target.value }))}
+              min="0"
+              max="10"
+              step="0.1"
+            />
+          )}
+          <div className="planes-estudio__form-fechas">
+            <FormField
+              label="Fecha inicio"
+              type="date"
+              name="fecha_inicio"
+              value={formPlan.fecha_inicio}
+              onChange={(e) => setFormPlan((p) => ({ ...p, fecha_inicio: e.target.value }))}
+            />
+            <FormField
+              label="Fecha fin"
+              type="date"
+              name="fecha_fin"
+              value={formPlan.fecha_fin}
+              onChange={(e) => setFormPlan((p) => ({ ...p, fecha_fin: e.target.value }))}
+            />
+          </div>
+        </form>
+      </Modal>
+
+      {/* Confirmar activar/desactivar */}
       <ConfirmDialog
         abierto={!!confirmAccion}
         titulo={confirmAccion === 'activar' ? 'Activar plan' : 'Desactivar plan'}

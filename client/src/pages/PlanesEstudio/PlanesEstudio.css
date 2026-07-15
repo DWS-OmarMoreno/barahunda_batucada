@@ -383,6 +383,466 @@
   white-space: nowrap;
 }
 
+/* ── Detalle: cabecera ────────────────────────────────────────────────────── */
+
+.planes-det__header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.planes-det__header-right {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.planes-det__titulo {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 6px 0 4px;
+  color: var(--color-text);
+}
+
+.planes-det__nivel-chip {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.planes-det__chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.planes-det__chip {
+  font-size: 12px;
+  color: var(--color-secondary);
+  background: var(--color-surface-alt, rgba(0,0,0,0.04));
+  border-radius: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--color-border);
+}
+
+/* ── Estructura: secciones ────────────────────────────────────────────────── */
+
+.planes-det__est-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.planes-det__pond-total {
+  font-size: 13px;
+  margin: 0;
+}
+
+.planes-det__pond-total--ok {
+  color: var(--color-success, #22c55e);
+}
+
+.planes-det__pond-total--warn {
+  color: var(--color-danger);
+}
+
+.planes-det__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: var(--color-secondary);
+  text-align: center;
+  border: 2px dashed var(--color-border);
+  border-radius: 10px;
+}
+
+.planes-det__empty-icon {
+  font-size: 36px;
+}
+
+.planes-det__seccion-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.planes-det__seccion-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-surface-alt, rgba(0,0,0,0.03));
+  border-bottom: 1px solid var(--color-border);
+}
+
+.planes-det__seccion-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.planes-det__seccion-icono {
+  font-size: 16px;
+}
+
+.planes-det__seccion-nombre {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.planes-det__seccion-nombre:hover {
+  color: var(--color-primary);
+}
+
+.planes-det__seccion-input {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid var(--color-primary);
+  border-radius: 5px;
+  padding: 3px 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+}
+
+.planes-det__seccion-count {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.planes-det__seccion-acciones {
+  display: flex;
+  gap: 4px;
+}
+
+.planes-det__btn-ghost {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  color: var(--color-secondary);
+  line-height: 1;
+}
+
+.planes-det__btn-ghost:hover {
+  background: var(--color-hover, rgba(0,0,0,0.06));
+}
+
+.planes-det__btn-ghost--danger:hover {
+  background: rgba(239,68,68,0.08);
+  color: var(--color-danger);
+}
+
+/* ── Estructura: ítems ────────────────────────────────────────────────────── */
+
+.planes-det__items-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.planes-det__item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 10px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.planes-det__item-row:last-of-type {
+  border-bottom: none;
+}
+
+.planes-det__item-row:hover {
+  background: var(--color-hover, rgba(0,0,0,0.02));
+}
+
+.planes-det__item-row--examen {
+  background: rgba(239,68,68,0.03);
+}
+
+.planes-det__item-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.planes-det__item-titulo {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.planes-det__item-pond {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 59,130,246),0.08);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.planes-det__item-fecha {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.planes-det__item-lock-hint {
+  font-size: 11px;
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+.planes-det__item-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.planes-det__add-item-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-top: 1px dashed var(--color-border);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-primary);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.planes-det__add-item-btn:hover {
+  background: var(--color-hover, rgba(0,0,0,0.03));
+}
+
+/* ── Historial ─────────────────────────────────────────────────────────────── */
+
+.planes-det__hist-total {
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.planes-det__hist-seccion {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.planes-det__hist-seccion-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--color-surface-alt, rgba(0,0,0,0.03));
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.planes-det__hist-item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.planes-det__hist-item:last-child {
+  border-bottom: none;
+}
+
+.planes-det__hist-item-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+.planes-det__hist-item-hdr:hover {
+  background: var(--color-hover, rgba(0,0,0,0.03));
+}
+
+.planes-det__hist-item-titulo {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.planes-det__hist-cnt {
+  font-size: 12px;
+  color: var(--color-secondary);
+  background: var(--color-surface-alt, rgba(0,0,0,0.04));
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.planes-det__hist-cnt--has {
+  background: rgba(var(--color-primary-rgb, 59,130,246),0.1);
+  color: var(--color-primary);
+}
+
+.planes-det__chev {
+  font-size: 11px;
+  color: var(--color-secondary);
+}
+
+.planes-det__hist-entregas {
+  padding: 0 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.planes-det__entrega-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+}
+
+.planes-det__entrega-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.planes-det__entrega-nombre {
+  font-size: 14px;
+  display: block;
+}
+
+.planes-det__entrega-fecha {
+  font-size: 12px;
+  color: var(--color-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.planes-det__entrega-estado {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.planes-det__entrega-nota {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.planes-det__entrega-link {
+  font-size: 13px;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.planes-det__entrega-link:hover {
+  text-decoration: underline;
+}
+
+.planes-det__calif-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Reporte: stat cards ──────────────────────────────────────────────────── */
+
+.planes-det__reporte-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.planes-det__stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  min-width: 90px;
+}
+
+.planes-det__stat-card--success { border-color: var(--color-success, #22c55e); }
+.planes-det__stat-card--info { border-color: var(--color-primary); }
+
+.planes-det__stat-num {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.planes-det__stat-lbl {
+  font-size: 12px;
+  color: var(--color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Tabla reporte ────────────────────────────────────────────────────────── */
+
+.planes-det__td-nombre {
+  font-weight: 500;
+  min-width: 160px;
+}
+
+.planes-det__td-vacio { color: var(--color-secondary); }
+.planes-det__td-ok { color: var(--color-success, #22c55e); font-weight: 600; }
+.planes-det__td-mal { color: var(--color-danger); font-weight: 600; }
+.planes-det__td-warn { color: var(--color-warning, #f59e0b); font-weight: 600; }
+.planes-det__td-nota { font-size: 15px; }
+
+.planes-det__th-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 80px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.planes-det__th-pond {
+  font-size: 10px;
+  color: var(--color-secondary);
+  font-weight: 400;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {

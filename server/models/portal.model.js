@@ -141,7 +141,6 @@ async function actualizarPerfil(miembroId, datos) {
 async function obtenerPlanesActivos(miembroId) {
   const planesModel = require('./planesEstudio.model');
 
-  // Niveles activos del miembro
   const [inscripciones] = await pool.query(
     `SELECT mn.nivel_id, n.nombre AS nivel_nombre
      FROM miembro_niveles mn
@@ -154,46 +153,64 @@ async function obtenerPlanesActivos(miembroId) {
   const resultado = [];
 
   for (const insc of inscripciones) {
-    // Plan activo del nivel
-    const [[plan]] = await pool.query( // eslint-disable-line no-await-in-loop
+    // eslint-disable-next-line no-await-in-loop
+    const [[plan]] = await pool.query(
       `SELECT * FROM planes_estudio WHERE nivel_id = ? AND activo = 1 LIMIT 1`,
       [insc.nivel_id]
     );
     if (!plan) continue;
 
-    // Ítems del plan en orden
-    const items = await planesModel.listarItems(plan.id); // eslint-disable-line no-await-in-loop
+    // eslint-disable-next-line no-await-in-loop
+    const secciones = await planesModel.listarSecciones(plan.id);
 
-    if (items.length === 0) {
-      resultado.push({ ...plan, nivel_nombre: insc.nivel_nombre, items: [] });
+    if (secciones.length === 0) {
+      resultado.push({ ...plan, nivel_nombre: insc.nivel_nombre, secciones: [], total_items: 0, items_entregados: 0 });
       continue;
     }
 
-    const ids = items.map((i) => i.id);
-    const placeholders = ids.map(() => '?').join(', ');
+    const todosItems = secciones.flatMap((s) => s.items);
+    if (todosItems.length === 0) {
+      resultado.push({ ...plan, nivel_nombre: insc.nivel_nombre, secciones, total_items: 0, items_entregados: 0 });
+      continue;
+    }
 
-    // Entrega del miembro para cada ítem
-    const [entregas] = await pool.query( // eslint-disable-line no-await-in-loop
-      `SELECT plan_item_id, calificacion, calificacion_categorica, fecha_entrega, url_evidencia, observaciones
+    const ids = todosItems.map((i) => i.id);
+    const ph = ids.map(() => '?').join(', ');
+
+    // eslint-disable-next-line no-await-in-loop
+    const [entregas] = await pool.query(
+      `SELECT plan_item_id, calificacion, calificacion_categorica, fecha_entrega,
+              url_evidencia, observaciones, retroalimentacion
        FROM entregas
-       WHERE miembro_id = ? AND plan_item_id IN (${placeholders})`,
+       WHERE miembro_id = ? AND plan_item_id IN (${ph})`,
       [miembroId, ...ids]
     );
     const porItem = new Map(entregas.map((e) => [e.plan_item_id, e]));
 
-    // Desbloqueo de exámenes
-    const itemsConEstado = [];
-    for (const item of items) {
-      const entrega = porItem.get(item.id) || null;
-      let desbloqueado = true;
-      if (item.tipo === 'EXAMEN') {
-        // eslint-disable-next-line no-await-in-loop
-        desbloqueado = await planesModel.verificarDesbloqueo(item.id, miembroId);
+    const seccionesConEstado = [];
+    for (const sec of secciones) {
+      const itemsConEstado = [];
+      for (const item of sec.items) {
+        const entrega = porItem.get(item.id) || null;
+        let desbloqueado = true;
+        if (item.tipo === 'EXAMEN') {
+          // eslint-disable-next-line no-await-in-loop
+          desbloqueado = await planesModel.verificarDesbloqueo(item.id, miembroId);
+        }
+        itemsConEstado.push({ ...item, entrega, desbloqueado });
       }
-      itemsConEstado.push({ ...item, entrega, desbloqueado });
+      const itemsEntregados = itemsConEstado.filter((i) => i.entrega).length;
+      seccionesConEstado.push({ ...sec, items: itemsConEstado, total_items: itemsConEstado.length, items_entregados: itemsEntregados });
     }
 
-    resultado.push({ ...plan, nivel_nombre: insc.nivel_nombre, items: itemsConEstado });
+    const entregadosGlobal = seccionesConEstado.reduce((s, sec) => s + sec.items_entregados, 0);
+    resultado.push({
+      ...plan,
+      nivel_nombre: insc.nivel_nombre,
+      secciones: seccionesConEstado,
+      total_items: todosItems.length,
+      items_entregados: entregadosGlobal,
+    });
   }
 
   return resultado;
