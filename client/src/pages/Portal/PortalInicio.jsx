@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerPerfil, actualizarPerfil } from '../../services/portal.service';
+import { obtenerMiPlan } from '../../services/planesEstudio.service';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import { formatearFecha } from '../../utils/formato';
@@ -11,7 +12,7 @@ const ACCESOS = [
   { ruta: '/portal/asistencias',   icono: '📅', titulo: 'Asistencias',  desc: 'Consulta tu historial de asistencia' },
   { ruta: '/portal/mensualidades', icono: '💳', titulo: 'Mis pagos',     desc: 'Revisa tus mensualidades y pagos' },
   { ruta: '/portal/guias',         icono: '📚', titulo: 'Guías',         desc: 'Recursos y materiales de tu nivel' },
-  { ruta: '/portal/tareas',        icono: '📝', titulo: 'Tareas',        desc: 'Tareas asignadas y entregas pendientes' },
+  { ruta: '/portal/tareas',        icono: '📋', titulo: 'Plan de estudios', desc: 'Actividades y exámenes de tu plan' },
 ];
 
 const TIPOS_SANGRE = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -65,10 +66,69 @@ function CampoSiNo({ label, id, value, onChange }) {
   );
 }
 
+// ── Dashboard pendientes ──────────────────────────────────────────────────────
+
+function DashboardPendientes({ planes }) {
+  // Recolectar items pendientes desbloqueados de todos los planes
+  const pendientes = [];
+  for (const plan of planes) {
+    for (const sec of (plan.secciones ?? [])) {
+      for (const item of (sec.items ?? [])) {
+        if (!item.entrega && item.desbloqueado !== false) {
+          pendientes.push({ ...item, plan_nombre: plan.nombre, nivel_nombre: plan.nivel_nombre });
+        }
+      }
+    }
+  }
+
+  if (pendientes.length === 0) return null;
+
+  const visibles = pendientes.slice(0, 3);
+  const hayMas = pendientes.length > 3;
+
+  return (
+    <div className="portal__dashboard-pendientes">
+      <div className="portal__dash-header">
+        <h2 className="portal__dash-titulo">📌 Pendientes</h2>
+        {hayMas && (
+          <Link to="/portal/tareas" className="portal__dash-ver-mas">
+            Ver todos ({pendientes.length}) →
+          </Link>
+        )}
+      </div>
+      <div className="portal__dash-lista">
+        {visibles.map((item) => (
+          <div key={item.id} className="portal__dash-item">
+            <span className="portal__dash-icono">{item.tipo === 'EXAMEN' ? '📝' : '🔵'}</span>
+            <div className="portal__dash-item-info">
+              <span className="portal__dash-item-titulo">{item.titulo}</span>
+              <span className="portal__dash-item-meta">
+                {item.nivel_nombre}
+                {item.fecha_limite && (
+                  <span className="portal__dash-fecha"> · límite {String(item.fecha_limite).slice(0, 10)}</span>
+                )}
+              </span>
+            </div>
+            {item.tipo === 'EXAMEN' && (
+              <StatusBadge texto="Examen" variant="danger" />
+            )}
+          </div>
+        ))}
+      </div>
+      {hayMas && (
+        <Link to="/portal/tareas" className="portal__dash-ver-mas-btn">
+          Ver plan completo →
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function PortalInicio() {
   const { usuario } = useAuth();
   const [perfil, setPerfil] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [planes, setPlanes] = useState([]);
 
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({});
@@ -77,10 +137,16 @@ export default function PortalInicio() {
   const [exitoPerfil, setExitoPerfil] = useState('');
 
   useEffect(() => {
-    obtenerPerfil()
-      .then((r) => setPerfil(r.data))
-      .catch(() => setPerfil(null))
-      .finally(() => setCargando(false));
+    Promise.all([
+      obtenerPerfil().then((r) => r.data).catch(() => null),
+      obtenerMiPlan().then((r) => {
+        const d = r?.data ?? r;
+        return Array.isArray(d) ? d : [];
+      }).catch(() => []),
+    ]).then(([perfilData, planesData]) => {
+      setPerfil(perfilData);
+      setPlanes(planesData);
+    }).finally(() => setCargando(false));
   }, []);
 
   function abrirEdicion() {
@@ -171,6 +237,9 @@ export default function PortalInicio() {
           </Link>
         ))}
       </div>
+
+      {/* Dashboard de pendientes */}
+      <DashboardPendientes planes={planes} />
 
       {/* Información personal */}
       <div className="portal__perfil-card">

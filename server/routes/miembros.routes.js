@@ -33,4 +33,7 @@ router.post('/:id/generar-correo', controller.generarCorreo);
 router.post('/:id/conceder-acceso', controller.concederAcceso);
 router.post('/:id/remover-acceso', controller.removerAcceso);
 
+router.get('/:id/asistencias', controller.listarAsistenciasMiembro);
+router.get('/:id/entregas-plan', controller.listarEntregasPlanMiembro);
+
 module.exports = router;

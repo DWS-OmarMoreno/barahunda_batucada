@@ -9,7 +9,7 @@ const MODULOS = [
   { ruta: '/portal/asistencias',   etiqueta: 'Asistencias',  icono: '📅' },
   { ruta: '/portal/mensualidades', etiqueta: 'Mis pagos',    icono: '💳' },
   { ruta: '/portal/guias',         etiqueta: 'Guías',        icono: '📚' },
-  { ruta: '/portal/tareas',        etiqueta: 'Tareas',       icono: '📝' },
+  { ruta: '/portal/tareas',        etiqueta: 'Plan de estudios', icono: '📋' },
 ];
 
 export default function PortalLayout() {

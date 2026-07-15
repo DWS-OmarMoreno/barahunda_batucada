@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { obtenerMisTareas, enviarEntrega, editarEntrega } from '../../services/portal.service';
+import { editarEntrega } from '../../services/portal.service';
 import { obtenerMiPlan, entregarItem } from '../../services/planesEstudio.service';
-import { formatearFecha } from '../../utils/formato';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -9,15 +8,6 @@ import FormField from '../../components/ui/FormField';
 import './Portal.css';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function estadoTarea(t) {
-  if (t.calificacion !== null && t.calificacion !== undefined)
-    return { texto: `Nota: ${t.calificacion}/100`, variant: 'success' };
-  if (t.entrega_id) return { texto: 'Entregada', variant: 'info' };
-  if (t.fecha_limite && new Date(t.fecha_limite) < new Date())
-    return { texto: 'Vencida', variant: 'danger' };
-  return { texto: 'Pendiente', variant: 'warning' };
-}
 
 function califLabel(plan, item) {
   if (!item.entrega) return null;
@@ -313,162 +303,25 @@ function ModalEditarEntrega({ item, onClose, onExito }) {
   );
 }
 
-// ─── Tareas standalone ─────────────────────────────────────────────────────────
-
-function TareasStandalone({ tareas, onEnviar }) {
-  const pendientes = tareas.filter((t) => !t.entrega_id);
-  const entregadas = tareas.filter((t) => t.entrega_id);
-
-  return (
-    <div className="mistarea__standalone">
-      <h2 className="mistarea__section-titulo">📌 Tareas del nivel</h2>
-
-      {tareas.length === 0 && (
-        <p className="mistarea__vacio">No tienes tareas asignadas.</p>
-      )}
-
-      {pendientes.length > 0 && (
-        <div className="mistarea__tareas-lista">
-          {pendientes.map((t) => {
-            const est = estadoTarea(t);
-            return (
-              <div key={t.id} className="mistarea__tarea-card">
-                <div className="mistarea__tarea-hdr">
-                  <span className="mistarea__tarea-titulo">{t.titulo}</span>
-                  <StatusBadge texto={est.texto} variant={est.variant} />
-                </div>
-                {t.descripcion && <p className="mistarea__tarea-desc">{t.descripcion}</p>}
-                {t.fecha_limite && (
-                  <p className="mistarea__tarea-fecha">📅 Límite: {formatearFecha(t.fecha_limite)}</p>
-                )}
-                {!t.entrega_id && (
-                  <Button onClick={() => onEnviar(t)}>Entregar</Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {entregadas.length > 0 && (
-        <>
-          <h3 className="mistarea__subseccion-titulo">Entregadas</h3>
-          <div className="mistarea__tareas-lista">
-            {entregadas.map((t) => {
-              const est = estadoTarea(t);
-              return (
-                <div key={t.id} className="mistarea__tarea-card mistarea__tarea-card--entregada">
-                  <div className="mistarea__tarea-hdr">
-                    <span className="mistarea__tarea-titulo">{t.titulo}</span>
-                    <StatusBadge texto={est.texto} variant={est.variant} />
-                  </div>
-                  {t.fecha_entrega && (
-                    <p className="mistarea__tarea-fecha">✅ Entregada: {formatearFecha(t.fecha_entrega)}</p>
-                  )}
-                  {t.retroalimentacion && (
-                    <p className="mistarea__tarea-retro">💬 {t.retroalimentacion}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Modal entrega tarea standalone ───────────────────────────────────────────
-
-function ModalEntregaTarea({ tarea, onClose, onExito }) {
-  const [form, setForm] = useState({ url_evidencia: '', observaciones: '' });
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState('');
-
-  async function enviar(e) {
-    e.preventDefault();
-    if (!form.url_evidencia.trim() && !form.observaciones.trim()) {
-      return setError('Debes ingresar un enlace o un comentario.');
-    }
-    setEnviando(true);
-    setError('');
-    try {
-      await enviarEntrega({
-        tarea_id: tarea.id,
-        url_evidencia: form.url_evidencia || null,
-        observaciones: form.observaciones || null,
-      });
-      onExito();
-    } catch (err) {
-      setError(err?.response?.data?.message || 'No se pudo enviar. Intenta nuevamente.');
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  return (
-    <Modal
-      abierto
-      titulo={`Entregar: ${tarea?.titulo}`}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={enviar} loading={enviando}>Enviar</Button>
-        </>
-      }
-    >
-      <form onSubmit={enviar} className="mistarea__form">
-        <FormField
-          label="Enlace de evidencia (URL)"
-          type="url"
-          name="url_evidencia"
-          value={form.url_evidencia}
-          onChange={(e) => setForm((p) => ({ ...p, url_evidencia: e.target.value }))}
-        />
-        <FormField
-          label="Comentarios"
-          type="textarea"
-          name="observaciones"
-          value={form.observaciones}
-          onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))}
-          rows={3}
-        />
-        <p className="mistarea__form-hint">* Debes proporcionar al menos un enlace o un comentario.</p>
-        {error && <p className="mistarea__error">{error}</p>}
-      </form>
-    </Modal>
-  );
-}
-
 // ─── MisTareas (principal) ─────────────────────────────────────────────────────
 
 export default function MisTareas() {
   const [planes, setPlanes] = useState([]);
-  const [tareas, setTareas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   // Modal plan item (nueva entrega)
   const [itemSeleccionado, setItemSeleccionado] = useState(null); // { item, planId }
   // Modal editar entrega plan item
   const [itemEditando, setItemEditando] = useState(null);
-  // Modal tarea standalone
-  const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const [planesResp, tareasResp] = await Promise.all([
-        obtenerMiPlan(),
-        obtenerMisTareas(),
-      ]);
+      const planesResp = await obtenerMiPlan();
       const planesData = planesResp?.data ?? planesResp;
-      const tareasData = tareasResp?.data ?? tareasResp;
       setPlanes(Array.isArray(planesData) ? planesData : []);
-      setTareas(Array.isArray(tareasData) ? tareasData : []);
     } catch {
       setPlanes([]);
-      setTareas([]);
     } finally {
       setCargando(false);
     }
@@ -492,28 +345,25 @@ export default function MisTareas() {
   if (cargando) {
     return (
       <div className="mistarea">
-        <p className="mistarea__cargando">Cargando tareas...</p>
+        <p className="mistarea__cargando">Cargando plan de estudios...</p>
       </div>
     );
   }
 
-  const sinContenido = planes.length === 0 && tareas.length === 0;
-
   return (
     <div className="mistarea">
-      <h1 className="mistarea__titulo-pag">Mis tareas</h1>
+      <h1 className="mistarea__titulo-pag">Plan de estudios</h1>
 
-      {sinContenido && (
+      {planes.length === 0 && (
         <div className="mistarea__vacio-total">
           <span className="mistarea__vacio-icon">📋</span>
-          <p>No tienes planes de estudio ni tareas asignadas por ahora.</p>
+          <p>No tienes un plan de estudios activo por ahora.</p>
         </div>
       )}
 
       {/* Planes de estudio con secciones */}
       {planes.length > 0 && (
         <section className="mistarea__planes">
-          <h2 className="mistarea__section-titulo">📚 Plan de estudios</h2>
           {planes.map((plan) => (
             <PlanCard
               key={plan.id}
@@ -523,14 +373,6 @@ export default function MisTareas() {
             />
           ))}
         </section>
-      )}
-
-      {/* Tareas standalone */}
-      {tareas.length > 0 && (
-        <TareasStandalone
-          tareas={tareas}
-          onEnviar={setTareaSeleccionada}
-        />
       )}
 
       {/* Modal entrega plan item */}
@@ -549,15 +391,6 @@ export default function MisTareas() {
           item={itemEditando}
           onClose={() => setItemEditando(null)}
           onExito={() => { setItemEditando(null); cargar(); }}
-        />
-      )}
-
-      {/* Modal entrega tarea standalone */}
-      {tareaSeleccionada && (
-        <ModalEntregaTarea
-          tarea={tareaSeleccionada}
-          onClose={() => setTareaSeleccionada(null)}
-          onExito={() => { setTareaSeleccionada(null); cargar(); }}
         />
       )}
     </div>

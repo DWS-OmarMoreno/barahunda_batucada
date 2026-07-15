@@ -284,9 +284,10 @@ async function notificarPlan(req, res, next) {
     if (canal === 'EMAIL' || canal === 'AMBOS') {
       for (const d of destinatarios) {
         if (d.email) {
-          await emailUtil.enviarMensaje(
+          await emailUtil.enviarConPlantilla(
+            'notif_plan',
             { email: d.email, nombre: d.nombre },
-            { asunto: `Plan de estudio: ${plan.nombre}`, cuerpo: d.mensaje }
+            { nombre: d.nombre, plan_nombre: plan.nombre, nivel_nombre: plan.nivel_nombre }
           ).catch(() => {});
         }
       }
@@ -333,9 +334,15 @@ async function notificarItem(req, res, next) {
     if (canal === 'EMAIL' || canal === 'AMBOS') {
       for (const d of destinatarios) {
         if (d.email) {
-          await emailUtil.enviarMensaje(
+          await emailUtil.enviarConPlantilla(
+            'notif_item',
             { email: d.email, nombre: d.nombre },
-            { asunto: `Actividad: ${item.titulo}`, cuerpo: d.mensaje }
+            {
+              nombre: d.nombre,
+              item_titulo: item.titulo,
+              plan_nombre: item.plan_nombre,
+              fecha_limite: item.fecha_limite ? String(item.fecha_limite).slice(0, 10) : 'Sin fecha límite',
+            }
           ).catch(() => {});
         }
       }

@@ -454,6 +454,58 @@ async function removerAcceso(req, res, next) {
   }
 }
 
+// GET /api/miembros/:id/asistencias — historial de asistencias del miembro
+async function listarAsistenciasMiembro(req, res, next) {
+  try {
+    const miembroId = req.params.id;
+    const { pagina = 1, limite = 20 } = req.query;
+    const offset = (Number(pagina) - 1) * Number(limite);
+
+    const [[{ total }]] = await pool.query(
+      'SELECT COUNT(*) AS total FROM asistencias WHERE miembro_id = ?',
+      [miembroId]
+    );
+
+    const [filas] = await pool.query(
+      `SELECT a.id, a.fecha, a.estado, a.observaciones, a.registrado_por,
+              n.nombre AS nivel_nombre
+       FROM asistencias a
+       LEFT JOIN niveles n ON n.id = a.nivel_id
+       WHERE a.miembro_id = ?
+       ORDER BY a.fecha DESC
+       LIMIT ? OFFSET ?`,
+      [miembroId, Number(limite), offset]
+    );
+
+    return ok(res, {
+      data: filas,
+      message: 'Asistencias obtenidas',
+      pagination: { page: Number(pagina), limit: Number(limite), total, totalPages: Math.ceil(total / Number(limite)) },
+    });
+  } catch (err) { next(err); }
+}
+
+// GET /api/miembros/:id/entregas-plan — entregas de ítems de plan del miembro
+async function listarEntregasPlanMiembro(req, res, next) {
+  try {
+    const [filas] = await pool.query(
+      `SELECT e.id, e.fecha_entrega, e.url_evidencia, e.observaciones,
+              e.calificacion, e.calificacion_categorica, e.retroalimentacion,
+              pi.titulo AS item_titulo, pi.tipo AS item_tipo, pi.fecha_limite,
+              pe.nombre AS plan_nombre,
+              n.nombre AS nivel_nombre
+       FROM entregas e
+       JOIN plan_items pi ON pi.id = e.plan_item_id
+       JOIN planes_estudio pe ON pe.id = pi.plan_id
+       JOIN niveles n ON n.id = pe.nivel_id
+       WHERE e.miembro_id = ? AND e.plan_item_id IS NOT NULL
+       ORDER BY e.fecha_entrega DESC`,
+      [req.params.id]
+    );
+    return ok(res, { data: filas, message: 'Entregas de plan obtenidas' });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   listar,
   obtener,
@@ -475,4 +527,6 @@ module.exports = {
   generarCorreo,
   concederAcceso,
   removerAcceso,
+  listarAsistenciasMiembro,
+  listarEntregasPlanMiembro,
 };

@@ -117,3 +117,13 @@ export async function removerAccesoPortal(id) {
   const { data } = await api.post(`/miembros/${id}/remover-acceso`);
   return data;
 }
+
+export async function listarAsistenciasMiembro(id, params = {}) {
+  const { data } = await api.get(`/miembros/${id}/asistencias`, { params });
+  return data;
+}
+
+export async function listarEntregasPlanMiembro(id) {
+  const { data } = await api.get(`/miembros/${id}/entregas-plan`);
+  return data;
+}

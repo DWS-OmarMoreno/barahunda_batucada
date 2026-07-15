@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   listarMiembros,
   crearMiembro,
@@ -14,7 +15,6 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import { formatearFecha } from '../../utils/formato';
-import MiembroDetalle from './MiembroDetalle';
 import ActionsMenu from '../../components/ui/ActionsMenu';
 import './Miembros.css';
 
@@ -49,6 +49,7 @@ const FORM_VACIO = {
 };
 
 export default function Miembros() {
+  const navigate = useNavigate();
   const [miembros, setMiembros] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
@@ -66,7 +67,6 @@ export default function Miembros() {
   const [error, setError] = useState('');
 
   const [confirmInactivar, setConfirmInactivar] = useState(null);
-  const [detalleId, setDetalleId] = useState(null);
   const [enviandoWhatsapp, setEnviandoWhatsapp] = useState(null);
 
   const cargar = useCallback(async () => {
@@ -226,7 +226,7 @@ export default function Miembros() {
         ]}
         acciones={(fila) => (
           <ActionsMenu acciones={[
-            { etiqueta: 'Ver detalle', onClick: () => setDetalleId(fila.id) },
+            { etiqueta: 'Ver detalle', onClick: () => navigate(`/miembros/${fila.id}`) },
             { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
             { etiqueta: 'WhatsApp', onClick: () => enviarRecordatorio(fila) },
             { etiqueta: fila.activo ? 'Inactivar' : 'Activar', onClick: () => setConfirmInactivar(fila), variant: 'danger' },
@@ -326,13 +326,6 @@ export default function Miembros() {
         textoConfirmar={confirmInactivar?.activo ? 'Inactivar' : 'Activar'}
       />
 
-      {detalleId && (
-        <MiembroDetalle
-          miembroId={detalleId}
-          onClose={() => setDetalleId(null)}
-          onCambio={cargar}
-        />
-      )}
     </div>
   );
 }
