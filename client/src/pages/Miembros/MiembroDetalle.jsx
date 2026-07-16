@@ -372,7 +372,7 @@ export default function MiembroDetalle() {
   if (!miembro) return (
     <div className="miembro-pag">
       <p className="miembros__error">Miembro no encontrado.</p>
-      <Button variant="secondary" onClick={() => navigate('/miembros')}>← Volver</Button>
+      <Button variant="secondary" onClick={() => navigate('/admin/miembros')}>← Volver</Button>
     </div>
   );
 
@@ -381,7 +381,7 @@ export default function MiembroDetalle() {
       {/* Encabezado de la página */}
       <div className="miembro-pag__header">
         <div className="miembro-pag__back">
-          <button type="button" className="miembro-pag__back-btn" onClick={() => navigate('/miembros')}>
+          <button type="button" className="miembro-pag__back-btn" onClick={() => navigate('/admin/miembros')}>
             ← Miembros
           </button>
         </div>

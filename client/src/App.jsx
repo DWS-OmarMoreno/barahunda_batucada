@@ -30,19 +30,37 @@ import MisMensualidades from './pages/Portal/MisMensualidades';
 import MisTareas from './pages/Portal/MisTareas';
 import MisGuias from './pages/Portal/MisGuias';
 
+// Landing — sitio web informativo (rutas públicas)
+import LandingLayout from './pages/Landing/LandingLayout';
+import LandingInicio from './pages/Landing/LandingInicio';
+import LandingNosotros from './pages/Landing/LandingNosotros';
+import LandingGaleria from './pages/Landing/LandingGaleria';
+import LandingContactenos from './pages/Landing/LandingContactenos';
+
 function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
           <Routes>
+
+            {/* ── Sitio web informativo — rutas públicas ────────────────── */}
+            <Route path="/" element={<LandingLayout />}>
+              <Route index          element={<LandingInicio />}     />
+              <Route path="nosotros"    element={<LandingNosotros />}   />
+              <Route path="galeria"     element={<LandingGaleria />}    />
+              <Route path="contactenos" element={<LandingContactenos />} />
+            </Route>
+
+            {/* ── Autenticación ─────────────────────────────────────────── */}
             <Route path="/login" element={<Login />} />
 
-            {/* Portal público de autoregistro de asistencia, sin login (kiosco/tablet). */}
+            {/* ── Punto de registro de asistencia (kiosco/tablet, sin login) */}
             <Route path="/asistencia" element={<Asistencia />} />
 
+            {/* ── Panel de administración ───────────────────────────────── */}
             <Route
-              path="/"
+              path="/admin"
               element={
                 <PrivateRoute>
                   <Layout />
@@ -50,26 +68,26 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="niveles" element={<Niveles />} />
-              <Route path="horarios" element={<Horarios />} />
-              <Route path="miembros" element={<Miembros />} />
-              <Route path="miembros/:id" element={<MiembroDetalle />} />
-              <Route path="asistencias" element={<Asistencias />} />
-              <Route path="mensualidades" element={<Mensualidades />} />
-              <Route path="multas" element={<Multas />} />
-              <Route path="eventos" element={<Eventos />} />
-              <Route path="comunicaciones" element={<Comunicaciones />} />
-              <Route path="reportes" element={<Reportes />} />
-              <Route path="importacion-exportacion" element={<ImportacionExportacion />} />
-              <Route path="escuela" element={<Escuela />} />
-              <Route path="configuracion" element={<Configuracion />} />
-              <Route path="usuarios" element={<Usuarios />} />
-              <Route path="plantillas-correo" element={<PlantillasCorreo />} />
-              <Route path="planes-estudio" element={<PlanesEstudio />} />
-              <Route path="planes-estudio/:id" element={<PlanDetalle />} />
+              <Route path="niveles"                element={<Niveles />}                />
+              <Route path="horarios"               element={<Horarios />}               />
+              <Route path="miembros"               element={<Miembros />}               />
+              <Route path="miembros/:id"           element={<MiembroDetalle />}         />
+              <Route path="asistencias"            element={<Asistencias />}            />
+              <Route path="mensualidades"          element={<Mensualidades />}          />
+              <Route path="multas"                 element={<Multas />}                 />
+              <Route path="eventos"                element={<Eventos />}                />
+              <Route path="comunicaciones"         element={<Comunicaciones />}         />
+              <Route path="reportes"               element={<Reportes />}               />
+              <Route path="importacion-exportacion"element={<ImportacionExportacion />} />
+              <Route path="escuela"                element={<Escuela />}                />
+              <Route path="configuracion"          element={<Configuracion />}          />
+              <Route path="usuarios"               element={<Usuarios />}               />
+              <Route path="plantillas-correo"      element={<PlantillasCorreo />}       />
+              <Route path="planes-estudio"         element={<PlanesEstudio />}          />
+              <Route path="planes-estudio/:id"     element={<PlanDetalle />}            />
             </Route>
 
-            {/* Portal del miembro — layout y guard propios */}
+            {/* ── Portal del miembro ────────────────────────────────────── */}
             <Route
               path="/portal"
               element={
@@ -78,12 +96,13 @@ function App() {
                 </PrivateRoute>
               }
             >
-              <Route index element={<PortalInicio />} />
-              <Route path="asistencias" element={<MisAsistencias />} />
+              <Route index              element={<PortalInicio />}      />
+              <Route path="asistencias" element={<MisAsistencias />}   />
               <Route path="mensualidades" element={<MisMensualidades />} />
-              <Route path="guias" element={<MisGuias />} />
-              <Route path="tareas" element={<MisTareas />} />
+              <Route path="guias"       element={<MisGuias />}         />
+              <Route path="tareas"      element={<MisTareas />}        />
             </Route>
+
           </Routes>
         </AuthProvider>
       </ThemeProvider>

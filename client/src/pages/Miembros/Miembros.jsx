@@ -226,7 +226,7 @@ export default function Miembros() {
         ]}
         acciones={(fila) => (
           <ActionsMenu acciones={[
-            { etiqueta: 'Ver detalle', onClick: () => navigate(`/miembros/${fila.id}`) },
+            { etiqueta: 'Ver detalle', onClick: () => navigate(`/admin/miembros/${fila.id}`) },
             { etiqueta: 'Editar', onClick: () => abrirEditar(fila) },
             { etiqueta: 'WhatsApp', onClick: () => enviarRecordatorio(fila) },
             { etiqueta: fila.activo ? 'Inactivar' : 'Activar', onClick: () => setConfirmInactivar(fila), variant: 'danger' },

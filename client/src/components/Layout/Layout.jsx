@@ -8,52 +8,52 @@ const SECCIONES = [
   {
     etiqueta: null,
     modulos: [
-      { ruta: '/', etiqueta: 'Dashboard', icono: '📊' },
+      { ruta: '/admin', etiqueta: 'Dashboard', icono: '📊' },
     ],
   },
   {
     etiqueta: 'Miembros',
     modulos: [
-      { ruta: '/miembros', etiqueta: 'Miembros', icono: '👥' },
-      { ruta: '/niveles', etiqueta: 'Niveles', icono: '🎼' },
+      { ruta: '/admin/miembros', etiqueta: 'Miembros', icono: '👥' },
+      { ruta: '/admin/niveles',  etiqueta: 'Niveles',  icono: '🎼' },
     ],
   },
   {
     etiqueta: 'Operaciones',
     modulos: [
-      { ruta: '/horarios', etiqueta: 'Horarios', icono: '📅' },
-      { ruta: '/asistencias', etiqueta: 'Asistencias', icono: '✅' },
-      { ruta: '/mensualidades', etiqueta: 'Mensualidades', icono: '💰' },
-      { ruta: '/multas', etiqueta: 'Multas', icono: '⚠️' },
+      { ruta: '/admin/horarios',      etiqueta: 'Horarios',      icono: '📅' },
+      { ruta: '/admin/asistencias',   etiqueta: 'Asistencias',   icono: '✅' },
+      { ruta: '/admin/mensualidades', etiqueta: 'Mensualidades', icono: '💰' },
+      { ruta: '/admin/multas',        etiqueta: 'Multas',        icono: '⚠️' },
     ],
   },
   {
     etiqueta: 'Escuela',
     modulos: [
-      { ruta: '/escuela', etiqueta: 'Escuela', icono: '🎓' },
-      { ruta: '/planes-estudio', etiqueta: 'Planes de estudio', icono: '📋' },
+      { ruta: '/admin/escuela',        etiqueta: 'Escuela',           icono: '🎓' },
+      { ruta: '/admin/planes-estudio', etiqueta: 'Planes de estudio', icono: '📋' },
     ],
   },
   {
     etiqueta: 'Comunicaciones',
     modulos: [
-      { ruta: '/eventos', etiqueta: 'Eventos', icono: '🎉' },
-      { ruta: '/comunicaciones', etiqueta: 'Comunicaciones', icono: '📢' },
+      { ruta: '/admin/eventos',        etiqueta: 'Eventos',        icono: '🎉' },
+      { ruta: '/admin/comunicaciones', etiqueta: 'Comunicaciones', icono: '📢' },
     ],
   },
   {
     etiqueta: 'Reportes',
     modulos: [
-      { ruta: '/reportes', etiqueta: 'Reportes', icono: '📈' },
-      { ruta: '/importacion-exportacion', etiqueta: 'Importar / Exportar', icono: '📦' },
+      { ruta: '/admin/reportes',                etiqueta: 'Reportes',          icono: '📈' },
+      { ruta: '/admin/importacion-exportacion', etiqueta: 'Importar / Exportar', icono: '📦' },
     ],
   },
   {
     etiqueta: 'Configuración',
     modulos: [
-      { ruta: '/configuracion', etiqueta: 'Configuración', icono: '⚙️' },
-      { ruta: '/usuarios', etiqueta: 'Administradores', icono: '🔑' },
-      { ruta: '/plantillas-correo', etiqueta: 'Plantillas de correo', icono: '✉️' },
+      { ruta: '/admin/configuracion',    etiqueta: 'Configuración',       icono: '⚙️' },
+      { ruta: '/admin/usuarios',         etiqueta: 'Administradores',     icono: '🔑' },
+      { ruta: '/admin/plantillas-correo',etiqueta: 'Plantillas de correo',icono: '✉️' },
     ],
   },
 ];
@@ -100,7 +100,7 @@ export default function Layout() {
                 <NavLink
                   key={m.ruta}
                   to={m.ruta}
-                  end={m.ruta === '/'}
+                  end={m.ruta === '/admin'}
                   className={({ isActive }) => `layout__nav-link ${isActive ? 'layout__nav-link--activo' : ''}`}
                   onClick={() => setMenuAbierto(false)}
                 >

@@ -196,7 +196,7 @@ export default function PlanesEstudio() {
         acciones={(fila) => (
           <ActionsMenu
             acciones={[
-              { etiqueta: 'Ver / Editar', onClick: () => navigate(`/planes-estudio/${fila.id}`) },
+              { etiqueta: 'Ver / Editar', onClick: () => navigate(`/admin/planes-estudio/${fila.id}`) },
               fila.activo
                 ? {
                     etiqueta: 'Desactivar',

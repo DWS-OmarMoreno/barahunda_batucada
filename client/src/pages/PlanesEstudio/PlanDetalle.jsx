@@ -964,7 +964,7 @@ export default function PlanDetalle() {
   if (!plan) {
     return (
       <div className="planes-det">
-        <button className="planes-det__volver" onClick={() => navigate('/planes-estudio')}>← Volver</button>
+        <button className="planes-det__volver" onClick={() => navigate('/admin/planes-estudio')}>← Volver</button>
         <p className="planes-det__vacio">Plan no encontrado.</p>
       </div>
     );
@@ -975,7 +975,7 @@ export default function PlanDetalle() {
 
   return (
     <div className="planes-det">
-      <button className="planes-det__volver" onClick={() => navigate('/planes-estudio')}>
+      <button className="planes-det__volver" onClick={() => navigate('/admin/planes-estudio')}>
         ← Planes de estudio
       </button>
 

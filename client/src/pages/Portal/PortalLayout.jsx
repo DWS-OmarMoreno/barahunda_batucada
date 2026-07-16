@@ -19,7 +19,7 @@ export default function PortalLayout() {
 
   if (cargando) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (usuario?.rol !== 'MIEMBRO') return <Navigate to="/" replace />;
+  if (usuario?.rol !== 'MIEMBRO') return <Navigate to="/admin" replace />;
 
   const inicial = (usuario?.nombre || 'E')[0].toUpperCase();
   const cerrarMenu = () => setMenuAbierto(false);
